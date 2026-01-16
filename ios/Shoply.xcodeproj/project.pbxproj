@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 63;
+	objectVersion = 77;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -53,7 +53,7 @@
 		1D49C722209F2ED54D9988B4 /* PendingInvite.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PendingInvite.swift; sourceTree = "<group>"; };
 		2598D97DD32B2EAE15DEF24E /* InviteService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InviteService.swift; sourceTree = "<group>"; };
 		2C426ED267EF791896304CFC /* MembersViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MembersViewModel.swift; sourceTree = "<group>"; };
-		3C5B175474436D378D361DAC /* Shoply.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Shoply.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		3C5B175474436D378D361DAC /* Shoply.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Shoply.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		49603238333712C53AD580AB /* PendingInvitesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PendingInvitesView.swift; sourceTree = "<group>"; };
 		59C20011C78CCFF2C3B7A815 /* ShoppingItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShoppingItem.swift; sourceTree = "<group>"; };
 		5B028C530953959681F09973 /* SessionViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionViewModel.swift; sourceTree = "<group>"; };
@@ -234,6 +234,11 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					568A71333D74621D6D0E5944 = {
+						DevelopmentTeam = "";
+					};
+				};
 			};
 			buildConfigurationList = E695DF22C2AC0A99D45E8645 /* Build configuration list for PBXProject "Shoply" */;
 			compatibilityVersion = "Xcode 14.0";
@@ -249,6 +254,7 @@
 				CEA3DD4CFDB4E8A946B1A154 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				51F8FAAC30B6A2BDDAD1C4B9 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 			);
+			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
