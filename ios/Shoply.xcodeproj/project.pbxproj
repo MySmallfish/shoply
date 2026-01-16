@@ -3,14 +3,14 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 77;
+	objectVersion = 63;
 	objects = {
 
 /* Begin PBXBuildFile section */
 		0237323CFBA841F63783D2BD /* PendingInvitesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49603238333712C53AD580AB /* PendingInvitesView.swift */; };
 		03B2AEC10ACE265397C4E6BA /* InviteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99D8A386D4F9FB95CB69BA2C /* InviteView.swift */; };
-		1D3ADB6163264737B4DB1BD5 /* ShareSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E062A0378834EBD92C6D380 /* ShareSheet.swift */; };
 		16CF7383E7DF51F2B1290294 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 1F6F4F172CD4078B988FBE9B /* FirebaseMessaging */; };
+		1D3ADB6163264737B4DB1BD5 /* ShareSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E062A0378834EBD92C6D380 /* ShareSheet.swift */; };
 		23B120F943A1F2187E4C1874 /* ListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD360D10D43331CF341487E1 /* ListViewModel.swift */; };
 		29623E59DCF667FB1EBEC4C7 /* ItemRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11C02C7A731FAA16B4391425 /* ItemRow.swift */; };
 		29D5F16873010218BD402F52 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 73D5A9B239E8B0EB0DCA5806 /* LaunchScreen.storyboard */; };
@@ -53,7 +53,7 @@
 		1D49C722209F2ED54D9988B4 /* PendingInvite.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PendingInvite.swift; sourceTree = "<group>"; };
 		2598D97DD32B2EAE15DEF24E /* InviteService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InviteService.swift; sourceTree = "<group>"; };
 		2C426ED267EF791896304CFC /* MembersViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MembersViewModel.swift; sourceTree = "<group>"; };
-		3C5B175474436D378D361DAC /* Shoply.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Shoply.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		3C5B175474436D378D361DAC /* Shoply.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Shoply.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		49603238333712C53AD580AB /* PendingInvitesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PendingInvitesView.swift; sourceTree = "<group>"; };
 		59C20011C78CCFF2C3B7A815 /* ShoppingItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShoppingItem.swift; sourceTree = "<group>"; };
 		5B028C530953959681F09973 /* SessionViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionViewModel.swift; sourceTree = "<group>"; };
@@ -234,11 +234,6 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
-				TargetAttributes = {
-					568A71333D74621D6D0E5944 = {
-						DevelopmentTeam = "";
-					};
-				};
 			};
 			buildConfigurationList = E695DF22C2AC0A99D45E8645 /* Build configuration list for PBXProject "Shoply" */;
 			compatibilityVersion = "Xcode 14.0";
@@ -254,7 +249,6 @@
 				CEA3DD4CFDB4E8A946B1A154 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				51F8FAAC30B6A2BDDAD1C4B9 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 			);
-			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -445,12 +439,13 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Shoply/Resources/Shoply.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = 563EG8DQC2;
 				INFOPLIST_FILE = Shoply/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.shoply.app;
+				PRODUCT_BUNDLE_IDENTIFIER = il.co.simplevision.shoply;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -462,12 +457,13 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Shoply/Resources/Shoply.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = 563EG8DQC2;
 				INFOPLIST_FILE = Shoply/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.shoply.app;
+				PRODUCT_BUNDLE_IDENTIFIER = il.co.simplevision.shoply;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
