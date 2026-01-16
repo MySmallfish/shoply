@@ -88,6 +88,56 @@ class ListRepository {
         }
     }
 
+    fun updateListTitle(listId: String, title: String, onComplete: (Exception?) -> Unit) {
+        db.collection("lists").document(listId).update(
+            hashMapOf(
+                "title" to title,
+                "updatedAt" to FieldValue.serverTimestamp()
+            )
+        )
+            .addOnSuccessListener { onComplete(null) }
+            .addOnFailureListener { error -> onComplete(error) }
+    }
+
+    fun mergeLists(sourceListId: String, targetListId: String, onComplete: (Exception?) -> Unit) {
+        val sourceRef = db.collection("lists").document(sourceListId).collection("items")
+        val targetRef = db.collection("lists").document(targetListId).collection("items")
+
+        targetRef.get()
+            .addOnSuccessListener { targetSnapshot ->
+                val existingKeys = targetSnapshot.documents.mapNotNull { itemKey(it.data) }.toSet()
+                sourceRef.get()
+                    .addOnSuccessListener { sourceSnapshot ->
+                        val batch = db.batch()
+                        var added = 0
+                        sourceSnapshot.documents.forEach { doc ->
+                            val data = doc.data
+                            val key = itemKey(data)
+                            if (key.isNullOrEmpty() || existingKeys.contains(key)) {
+                                return@forEach
+                            }
+                            val payload = HashMap(data).apply {
+                                put("createdAt", FieldValue.serverTimestamp())
+                                put("updatedAt", FieldValue.serverTimestamp())
+                            }
+                            batch.set(targetRef.document(), payload)
+                            added += 1
+                        }
+
+                        if (added == 0) {
+                            deleteList(sourceListId, onComplete)
+                            return@addOnSuccessListener
+                        }
+
+                        batch.commit()
+                            .addOnSuccessListener { deleteList(sourceListId, onComplete) }
+                            .addOnFailureListener { error -> onComplete(error) }
+                    }
+                    .addOnFailureListener { error -> onComplete(error) }
+            }
+            .addOnFailureListener { error -> onComplete(error) }
+    }
+
     fun addItem(listId: String, name: String, barcode: String?, userId: String) {
         val itemRef = db.collection("lists").document(listId).collection("items").document()
         val now = FieldValue.serverTimestamp()
@@ -202,6 +252,60 @@ class ListRepository {
         db.collection("lists").document(listId).update(
             hashMapOf<String, Any>("updatedAt" to FieldValue.serverTimestamp())
         )
+    }
+
+    private fun itemKey(data: Map<String, Any>?): String? {
+        if (data == null) return null
+        val barcode = data["barcode"] as? String
+        if (!barcode.isNullOrBlank()) {
+            return "barcode:$barcode"
+        }
+        val normalized = data["normalizedName"] as? String ?: normalizedName(data["name"] as? String ?: "")
+        return if (normalized.isBlank()) null else "name:$normalized"
+    }
+
+    private fun deleteList(listId: String, onComplete: (Exception?) -> Unit) {
+        val listRef = db.collection("lists").document(listId)
+        deleteCollection(listRef.collection("items")) { itemsError ->
+            if (itemsError != null) {
+                onComplete(itemsError)
+                return@deleteCollection
+            }
+            deleteCollection(listRef.collection("members")) { membersError ->
+                if (membersError != null) {
+                    onComplete(membersError)
+                    return@deleteCollection
+                }
+                deleteCollection(listRef.collection("invites")) { invitesError ->
+                    if (invitesError != null) {
+                        onComplete(invitesError)
+                        return@deleteCollection
+                    }
+                    listRef.delete()
+                        .addOnSuccessListener { onComplete(null) }
+                        .addOnFailureListener { error -> onComplete(error) }
+                }
+            }
+        }
+    }
+
+    private fun deleteCollection(
+        collection: com.google.firebase.firestore.CollectionReference,
+        onComplete: (Exception?) -> Unit
+    ) {
+        collection.get()
+            .addOnSuccessListener { snapshot ->
+                if (snapshot.isEmpty) {
+                    onComplete(null)
+                    return@addOnSuccessListener
+                }
+                val batch = db.batch()
+                snapshot.documents.forEach { batch.delete(it.reference) }
+                batch.commit()
+                    .addOnSuccessListener { onComplete(null) }
+                    .addOnFailureListener { error -> onComplete(error) }
+            }
+            .addOnFailureListener { error -> onComplete(error) }
     }
 
     private fun normalizedName(name: String): String {

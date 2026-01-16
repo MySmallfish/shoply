@@ -54,6 +54,14 @@ data class InviteViewData(
     val status: String
 )
 
+data class MergePrompt(
+    val existingListId: String,
+    val existingListTitle: String,
+    val invitedListId: String,
+    val invitedListTitle: String,
+    val creatorName: String
+)
+
 data class PendingInvite(
     val id: String,
     val listId: String,

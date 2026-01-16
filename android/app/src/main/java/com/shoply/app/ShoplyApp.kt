@@ -153,6 +153,7 @@ fun ListScreen(viewModel: MainViewModel) {
     val invites by viewModel.invites.collectAsState(initial = emptyList())
     val pendingInvites by viewModel.pendingInvites.collectAsState(initial = emptyList())
     val inviteActionError by viewModel.inviteActionError.collectAsState(initial = null)
+    val mergePrompt by viewModel.mergePrompt.collectAsState(initial = null)
     val currentRole by viewModel.currentRole.collectAsState(initial = null)
     val selectedListId by viewModel.selectedListId.collectAsState(initial = null)
     val context = LocalContext.current
@@ -339,6 +340,29 @@ fun ListScreen(viewModel: MainViewModel) {
             invites = pendingInvites,
             onDismiss = { showPendingInvites = false },
             onAccept = { token -> viewModel.handleInviteToken(token) }
+        )
+    }
+
+    mergePrompt?.let { prompt ->
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissMergePrompt() },
+            title = { Text("Merge lists?") },
+            text = {
+                Text(
+                    "You already have a list named \"${prompt.existingListTitle}\". " +
+                        "Merge it into \"${prompt.invitedListTitle}\"?"
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { viewModel.mergeInvitedList(prompt) }) {
+                    Text("Merge")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.keepInviteSeparate(prompt) }) {
+                    Text("Keep Separate")
+                }
+            }
         )
     }
 

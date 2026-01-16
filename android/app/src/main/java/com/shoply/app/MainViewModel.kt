@@ -46,6 +46,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _inviteActionError = MutableStateFlow<String?>(null)
     val inviteActionError: StateFlow<String?> = _inviteActionError
 
+    private val _mergePrompt = MutableStateFlow<MergePrompt?>(null)
+    val mergePrompt: StateFlow<MergePrompt?> = _mergePrompt
+
     private var listListener: ListenerRegistration? = null
     private var itemListener: ListenerRegistration? = null
     private var memberListener: ListenerRegistration? = null
@@ -54,6 +57,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private var isCreatingDefault = false
     private var pendingInviteToken: String? = null
     private var pendingInviteListId: String? = null
+    private var pendingInviteContext: PendingInviteContext? = null
     private var rawMembers: List<ListMember> = emptyList()
     private val profileCache = mutableMapOf<String, MemberProfile>()
 
@@ -202,6 +206,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             return
         }
         val invite = _pendingInvites.value.firstOrNull { it.token == trimmed }
+        if (invite != null) {
+            pendingInviteContext = PendingInviteContext(invite)
+        }
         val updates = hashMapOf(
             "status" to "accepted",
             "acceptedAt" to FieldValue.serverTimestamp(),
@@ -257,6 +264,37 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
     }
 
+    fun mergeInvitedList(prompt: MergePrompt) {
+        _inviteActionError.value = null
+        repo.mergeLists(prompt.existingListId, prompt.invitedListId) { error ->
+            if (error != null) {
+                _inviteActionError.value = "Merge failed: ${error.localizedMessage ?: "Unable to merge lists."}"
+            } else {
+                _mergePrompt.value = null
+                pendingInviteContext = null
+                selectList(prompt.invitedListId)
+            }
+        }
+    }
+
+    fun keepInviteSeparate(prompt: MergePrompt) {
+        _inviteActionError.value = null
+        val suffix = if (prompt.creatorName.isBlank()) "Shared" else prompt.creatorName
+        val title = "${prompt.invitedListTitle} - $suffix"
+        repo.updateListTitle(prompt.invitedListId, title) { error ->
+            if (error != null) {
+                _inviteActionError.value = "Rename failed: ${error.localizedMessage ?: "Unable to rename list."}"
+            } else {
+                _mergePrompt.value = null
+                pendingInviteContext = null
+            }
+        }
+    }
+
+    fun dismissMergePrompt() {
+        _mergePrompt.value = null
+    }
+
     fun updateMemberRole(memberId: String, role: String) {
         val listId = _selectedListId.value ?: return
         if (_currentRole.value != "owner") return
@@ -289,6 +327,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _pendingInvites.value = emptyList()
         _selectedListId.value = null
         _currentRole.value = null
+        _mergePrompt.value = null
+        pendingInviteContext = null
         profileCache.clear()
         rawMembers = emptyList()
 
@@ -304,6 +344,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         listListener = repo.listenToLists(user.uid) { lists ->
             _lists.value = lists
             selectListIfNeeded(user.uid)
+            checkMergeConflictIfNeeded()
             if (lists.isEmpty()) {
                 createDefaultListIfNeeded(user.uid)
             }
@@ -334,6 +375,26 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             else -> null
         }
         next?.let { selectList(it) }
+    }
+
+    private fun checkMergeConflictIfNeeded() {
+        if (_mergePrompt.value != null) return
+        val context = pendingInviteContext ?: return
+        if (_lists.value.none { it.id == context.listId }) return
+        val conflict = _lists.value.firstOrNull {
+            it.id != context.listId && it.title.equals(context.listTitle, ignoreCase = true)
+        }
+        if (conflict != null) {
+            _mergePrompt.value = MergePrompt(
+                existingListId = conflict.id,
+                existingListTitle = conflict.title,
+                invitedListId = context.listId,
+                invitedListTitle = context.listTitle,
+                creatorName = context.creatorDisplayName()
+            )
+        } else {
+            pendingInviteContext = null
+        }
     }
 
     private fun bindItems(listId: String) {
@@ -435,6 +496,28 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         repo.createList("Grocery", userId) { listId ->
             listId?.let { selectList(it) }
             isCreatingDefault = false
+        }
+    }
+
+    private data class PendingInviteContext(
+        val listId: String,
+        val listTitle: String,
+        val creatorName: String,
+        val creatorEmail: String
+    ) {
+        constructor(invite: PendingInvite) : this(
+            listId = invite.listId,
+            listTitle = invite.listTitle,
+            creatorName = invite.creatorName,
+            creatorEmail = invite.creatorEmail
+        )
+
+        fun creatorDisplayName(): String {
+            return when {
+                creatorName.isNotBlank() -> creatorName
+                creatorEmail.isNotBlank() -> creatorEmail
+                else -> "Shared"
+            }
         }
     }
 }
