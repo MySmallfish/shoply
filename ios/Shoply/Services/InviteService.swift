@@ -9,6 +9,8 @@ final class InviteService {
         listId: String,
         listTitle: String,
         createdBy: String,
+        creatorName: String,
+        creatorEmail: String,
         email: String,
         role: String,
         completion: @escaping (Result<String, Error>) -> Void
@@ -29,7 +31,9 @@ final class InviteService {
             "listTitle": listTitle,
             "token": token,
             "createdAt": now,
-            "createdBy": createdBy
+            "createdBy": createdBy,
+            "creatorName": creatorName,
+            "creatorEmail": creatorEmail
         ]
 
         var inboxData = data

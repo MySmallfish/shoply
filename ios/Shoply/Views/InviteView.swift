@@ -8,6 +8,8 @@ struct InviteView: View {
     @State private var role = "editor"
     @State private var errorMessage: String?
     @State private var isSending = false
+    @State private var shareURL: URL?
+    @State private var showShareSheet = false
 
     var body: some View {
         NavigationStack {
@@ -34,8 +36,14 @@ struct InviteView: View {
                             DispatchQueue.main.async {
                                 isSending = false
                                 switch result {
-                                case .success:
-                                    dismiss()
+                                case .success(let token):
+                                    let urlString = "https://shoply.simplevision.co.il/invite/\(token)"
+                                    if let url = URL(string: urlString) {
+                                        shareURL = url
+                                        showShareSheet = true
+                                    } else {
+                                        dismiss()
+                                    }
                                 case let .failure(error):
                                     errorMessage = error.localizedDescription
                                 }
@@ -53,6 +61,13 @@ struct InviteView: View {
                         dismiss()
                     }
                 }
+            }
+        }
+        .sheet(isPresented: $showShareSheet, onDismiss: {
+            dismiss()
+        }) {
+            if let url = shareURL {
+                ShareSheet(activityItems: [url])
             }
         }
         .alert(

@@ -114,7 +114,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun sendInvite(
         email: String,
         role: String,
-        onInviteCreated: () -> Unit,
+        onInviteCreated: (String) -> Unit,
         onError: (String) -> Unit
     ) {
         val listId = _selectedListId.value ?: run {
@@ -130,6 +130,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             onError("Please enter a valid email address.")
             return
         }
+        val creatorName = _user.value?.displayName ?: ""
+        val creatorEmail = _user.value?.email ?: ""
         val listTitle = _lists.value.firstOrNull { it.id == listId }?.title ?: "Shoply list"
         val token = UUID.randomUUID().toString().replace("-", "")
         val emailLower = trimmed.lowercase()
@@ -145,7 +147,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             "status" to "pending",
             "token" to token,
             "createdBy" to userId,
-            "createdAt" to com.google.firebase.firestore.FieldValue.serverTimestamp()
+            "createdAt" to com.google.firebase.firestore.FieldValue.serverTimestamp(),
+            "creatorName" to creatorName,
+            "creatorEmail" to creatorEmail
         )
         val inboxData = HashMap(data).apply {
             put("listInviteId", inviteRef.id)
@@ -155,7 +159,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             batch.set(inviteRef, data)
             batch.set(inboxRef, inboxData)
         }
-            .addOnSuccessListener { onInviteCreated() }
+            .addOnSuccessListener { onInviteCreated(token) }
             .addOnFailureListener { error ->
                 onError(error.localizedMessage ?: "Unable to send invite.")
             }

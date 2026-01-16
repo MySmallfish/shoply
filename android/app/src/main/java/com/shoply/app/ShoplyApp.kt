@@ -305,8 +305,13 @@ fun ListScreen(viewModel: MainViewModel) {
                 viewModel.sendInvite(
                     trimmed,
                     role,
-                    onInviteCreated = {
-                        Toast.makeText(context, "Invite created.", Toast.LENGTH_SHORT).show()
+                    onInviteCreated = { token ->
+                        val inviteUrl = "https://shoply.simplevision.co.il/invite/$token"
+                        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                            type = "text/plain"
+                            putExtra(Intent.EXTRA_TEXT, inviteUrl)
+                        }
+                        context.startActivity(Intent.createChooser(shareIntent, "Share invite link"))
                         showInvite = false
                     },
                     onError = { message ->

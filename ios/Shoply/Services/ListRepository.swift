@@ -224,6 +224,8 @@ final class ListRepository {
             role: data["role"] as? String ?? "editor",
             status: data["status"] as? String ?? "pending",
             token: token,
+            creatorName: data["creatorName"] as? String ?? "",
+            creatorEmail: data["creatorEmail"] as? String ?? "",
             createdAt: (data["createdAt"] as? Timestamp)?.dateValue()
         )
     }

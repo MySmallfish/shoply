@@ -8,5 +8,7 @@ struct PendingInvite: Identifiable {
     let role: String
     let status: String
     let token: String
+    let creatorName: String
+    let creatorEmail: String
     let createdAt: Date?
 }

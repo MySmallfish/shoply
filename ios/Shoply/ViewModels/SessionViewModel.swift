@@ -75,6 +75,8 @@ final class SessionViewModel: ObservableObject {
             completion?(.failure(InviteError.noListSelected))
             return
         }
+        let creatorName = user?.displayName ?? ""
+        let creatorEmail = user?.email ?? ""
         let listTitle = lists.first(where: { $0.id == listId })?.title ?? "Shoply list"
         let trimmed = email.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmed.isEmpty {
@@ -85,6 +87,8 @@ final class SessionViewModel: ObservableObject {
             listId: listId,
             listTitle: listTitle,
             createdBy: userId,
+            creatorName: creatorName,
+            creatorEmail: creatorEmail,
             email: trimmed,
             role: role
         ) { result in
