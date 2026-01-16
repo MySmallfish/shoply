@@ -1,0 +1,43 @@
+# macOS
+.DS_Store
+
+# Xcode
+DerivedData/
+ios/build/
+*.xcuserstate
+*.xcuserdata/
+*.moved-aside
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+xcuserdata/
+
+# Swift Package Manager
+.build/
+Packages/
+
+# Android/Gradle
+.gradle/
+**/build/
+android/local.properties
+android/.cxx/
+android/.idea/
+**/*.iml
+
+# Android SDK/NDK
+local.properties
+
+# Firebase config (keep local)
+android/app/google-services.json
+ios/Shoply/Resources/GoogleService-Info.plist
+
+# Firebase service account
+shoply-readonly.json
+
+# Node
+node_modules/
+
+# Misc
+*.log
+.config/

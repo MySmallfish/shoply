@@ -1,0 +1,74 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isMember(listId) {
+      return isSignedIn()
+        && get(/databases/$(database)/documents/lists/$(listId)).data.memberIds
+          .hasAny([request.auth.uid]);
+    }
+
+    function memberRole(listId) {
+      return get(/databases/$(database)/documents/lists/$(listId)/members/$(request.auth.uid)).data.role;
+    }
+
+    function isOwner(listId) {
+      return isSignedIn() && memberRole(listId) == 'owner';
+    }
+
+    function isEditor(listId) {
+      return isSignedIn() && (memberRole(listId) == 'owner' || memberRole(listId) == 'editor');
+    }
+
+    match /users/{userId} {
+      allow read, write: if isSignedIn() && request.auth.uid == userId;
+
+      match /tokens/{tokenId} {
+        allow read, write: if isSignedIn() && request.auth.uid == userId;
+      }
+    }
+
+    match /lists/{listId} {
+      allow read: if isSignedIn() && resource.data.memberIds.hasAny([request.auth.uid]);
+
+      allow create: if isSignedIn()
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.memberIds.size() == 1
+        && request.resource.data.memberIds.hasAll([request.auth.uid]);
+
+      allow update: if isEditor(listId);
+      allow delete: if isOwner(listId);
+
+      match /items/{itemId} {
+        allow read: if isMember(listId);
+        allow create, update: if isEditor(listId);
+        allow delete: if isOwner(listId) || isEditor(listId);
+      }
+
+      match /members/{memberId} {
+        allow read: if isMember(listId);
+        allow create: if isSignedIn()
+          && request.auth.uid == memberId
+          && (
+            isOwner(listId)
+            || (exists(/databases/$(database)/documents/lists/$(listId))
+              && get(/databases/$(database)/documents/lists/$(listId)).data.createdBy == request.auth.uid)
+          );
+        allow update, delete: if isOwner(listId);
+      }
+
+      match /invites/{inviteId} {
+        allow read: if isOwner(listId)
+          || (isSignedIn() && resource.data.status == "pending");
+        allow write: if isEditor(listId);
+      }
+    }
+
+    match /invitesInbox/{inviteId} {
+      allow read, write: if isSignedIn();
+    }
+  }
+}

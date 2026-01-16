@@ -1,0 +1,45 @@
+name: Shoply
+options:
+  bundleIdPrefix: com.shoply
+  deploymentTarget:
+    iOS: "16.0"
+settings:
+  base:
+    TARGETED_DEVICE_FAMILY: "1,2"
+    ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    DEVELOPMENT_TEAM: ""
+    SWIFT_VERSION: "5.0"
+packages:
+  Firebase:
+    url: https://github.com/firebase/firebase-ios-sdk
+    from: 10.20.0
+  GoogleSignIn:
+    url: https://github.com/google/GoogleSignIn-iOS
+    from: 7.1.0
+
+targets:
+  Shoply:
+    type: application
+    platform: iOS
+    sources:
+      - path: Shoply
+    resources:
+      - path: Shoply/Resources
+    entitlements:
+      path: Shoply/Resources/Shoply.entitlements
+    info:
+      path: Shoply/Resources/Info.plist
+    dependencies:
+      - package: Firebase
+        product: FirebaseAuth
+      - package: Firebase
+        product: FirebaseFirestore
+      - package: Firebase
+        product: FirebaseFunctions
+      - package: Firebase
+        product: FirebaseMessaging
+      - package: GoogleSignIn
+        product: GoogleSignIn
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.shoply.app
