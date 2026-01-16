@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		0237323CFBA841F63783D2BD /* PendingInvitesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49603238333712C53AD580AB /* PendingInvitesView.swift */; };
 		03B2AEC10ACE265397C4E6BA /* InviteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99D8A386D4F9FB95CB69BA2C /* InviteView.swift */; };
+		1D3ADB6163264737B4DB1BD5 /* ShareSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E062A0378834EBD92C6D380 /* ShareSheet.swift */; };
 		16CF7383E7DF51F2B1290294 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 1F6F4F172CD4078B988FBE9B /* FirebaseMessaging */; };
 		23B120F943A1F2187E4C1874 /* ListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD360D10D43331CF341487E1 /* ListViewModel.swift */; };
 		29623E59DCF667FB1EBEC4C7 /* ItemRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11C02C7A731FAA16B4391425 /* ItemRow.swift */; };
@@ -47,6 +48,7 @@
 		00168C4A3F3918E76D5C4BD9 /* ListRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListRepository.swift; sourceTree = "<group>"; };
 		03BB3C47464185BFE9B24692 /* ListSwitcherView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListSwitcherView.swift; sourceTree = "<group>"; };
 		058C21FA518A4D96993AA66F /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
+		0E062A0378834EBD92C6D380 /* ShareSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareSheet.swift; sourceTree = "<group>"; };
 		11C02C7A731FAA16B4391425 /* ItemRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemRow.swift; sourceTree = "<group>"; };
 		1D49C722209F2ED54D9988B4 /* PendingInvite.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PendingInvite.swift; sourceTree = "<group>"; };
 		2598D97DD32B2EAE15DEF24E /* InviteService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InviteService.swift; sourceTree = "<group>"; };
@@ -178,6 +180,7 @@
 				49603238333712C53AD580AB /* PendingInvitesView.swift */,
 				9AB1A3345F81636CA2A8834F /* RootView.swift */,
 				CBA816425CF45BFCF32C8ACA /* ScannerView.swift */,
+				0E062A0378834EBD92C6D380 /* ShareSheet.swift */,
 				A36A13DAC24F414D99E6BAB8 /* SignInView.swift */,
 			);
 			path = Views;
@@ -299,6 +302,7 @@
 				C5F44D42077269A911D9E4B9 /* PushTokenStore.swift in Sources */,
 				2DCA8EAFBA25112C7E9C6D71 /* RootView.swift in Sources */,
 				A25F07F7FEBAAD3ADA00308B /* ScannerView.swift in Sources */,
+				1D3ADB6163264737B4DB1BD5 /* ShareSheet.swift in Sources */,
 				40C4E85B7DA8058BE571C146 /* SessionViewModel.swift in Sources */,
 				80DC0E06AF061B180C544F4A /* ShoplyApp.swift in Sources */,
 				5CC1AE0CF603F56FF7C45840 /* ShoppingItem.swift in Sources */,

@@ -22,8 +22,10 @@ This file captures current project state, key decisions, build steps, and known 
 - Default "Grocery" list created at startup if missing; it becomes current list.
 - Barcode scan matches existing item -> prompt to mark as bought; otherwise prompt to add.
 - iOS Google Sign-In URL scheme restored in Info.plist.
-- Invites now write directly to Firestore only (no email/share/push); documents include `emailLower` + `allowedEmails` for compatibility.
+- Invites now write directly to Firestore only (no email or push); on success the app opens the system share sheet with an invite link.
+- Invite docs include `emailLower`, `allowedEmails`, `creatorName`, and `creatorEmail` for compatibility.
 - Pending invitations are read from top-level `invitesInbox` (filtered by `emailLower`) so invitees see invites across all lists.
+- If an invited list name matches an existing list, the user is prompted to merge or keep separate; keeping separate renames to `[listName] - [creator]`, merging removes the duplicate list.
 - Android invite send now surfaces errors when list/user/email is missing; FirebaseFunctions is used for acceptInvite.
 - Android shows a toast if acceptInvite fails (see `inviteActionError` flow).
 
@@ -44,14 +46,16 @@ This file captures current project state, key decisions, build steps, and known 
   - `videoGravity = .resizeAspect` to avoid zoomed camera.
 - `ios/Shoply/Views/PendingInvitesView.swift`
   - Pending invites list + Accept button.
+- `ios/Shoply/Views/ShareSheet.swift`
+  - Wrapper for the iOS share sheet used to send invite links.
 - `ios/Shoply/Services/PushTokenStore.swift`
   - Stores FCM tokens under `/users/{uid}/tokens/{token}`.
 
 ### Android
 - `android/app/src/main/java/com/shoply/app/ShoplyApp.kt`
-  - Compose screens, pull-to-refresh, Add item bar (IME Done triggers add).
+  - Compose screens, pull-to-refresh, Add item bar (IME Done triggers add), and invite link sharing.
 - `android/app/src/main/java/com/shoply/app/MainViewModel.kt`
-  - `refreshSelectedList()` rebinds item listener.
+  - `refreshSelectedList()` rebinds item listener, invite accept flow handles merge prompt on name conflicts.
 - `android/app/build.gradle`
   - `androidx.compose.material:material` added for pull-to-refresh.
 - `android/app/src/main/java/com/shoply/app/ScannerView.kt`
