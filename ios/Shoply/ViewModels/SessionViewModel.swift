@@ -11,6 +11,8 @@ final class SessionViewModel: ObservableObject {
     @Published var selectedListId: String?
     @Published var pendingInvites: [PendingInvite] = []
     @Published var inviteActionError: String?
+    @Published var mergePrompt: MergePrompt?
+    @Published var mergeActionError: String?
 
     private let authService = AuthService()
     private let repository = ListRepository()
@@ -20,6 +22,7 @@ final class SessionViewModel: ObservableObject {
     private var isCreatingDefault = false
     private var pendingInviteToken: String?
     private var pendingInviteListId: String?
+    private var pendingInviteContext: PendingInviteContext?
 
     func start() {
         authService.onUserChanged = { [weak self] user in
@@ -107,10 +110,13 @@ final class SessionViewModel: ObservableObject {
         if user == nil {
             pendingInviteToken = trimmed
         } else {
-            if let listId = pendingInvites.first(where: { $0.token == trimmed })?.listId {
-                pendingInviteListId = listId
+            if let invite = pendingInvites.first(where: { $0.token == trimmed }) {
+                pendingInviteListId = invite.listId
+                pendingInviteContext = PendingInviteContext(from: invite)
+                acceptInvite(token: trimmed, documentId: invite.id)
+            } else {
+                acceptInvite(token: trimmed)
             }
-            acceptInvite(token: trimmed, documentId: pendingInvites.first(where: { $0.token == trimmed })?.id)
         }
     }
 
@@ -123,6 +129,9 @@ final class SessionViewModel: ObservableObject {
         pendingInvites = []
         inviteActionError = nil
         pendingInviteListId = nil
+        pendingInviteContext = nil
+        mergePrompt = nil
+        mergeActionError = nil
 
         guard let user = user else { return }
         repository.ensureUserProfile(user: user)
@@ -131,6 +140,7 @@ final class SessionViewModel: ObservableObject {
             Task { @MainActor in
                 self?.lists = lists
                 self?.selectListIfNeeded()
+                self?.checkMergeConflictIfNeeded()
                 if lists.isEmpty {
                     self?.createDefaultListIfNeeded()
                 }
@@ -221,7 +231,59 @@ final class SessionViewModel: ObservableObject {
 
     func acceptPendingInvite(_ invite: PendingInvite) {
         pendingInviteListId = invite.listId
+        pendingInviteContext = PendingInviteContext(from: invite)
         acceptInvite(token: invite.token, documentId: invite.id)
+    }
+
+    func mergeInvitedList(_ prompt: MergePrompt) {
+        mergeActionError = nil
+        repository.mergeLists(sourceListId: prompt.existingListId, targetListId: prompt.invitedListId) { [weak self] result in
+            Task { @MainActor in
+                switch result {
+                case .success:
+                    self?.mergePrompt = nil
+                    self?.pendingInviteContext = nil
+                    self?.selectList(prompt.invitedListId)
+                case .failure(let error):
+                    self?.mergeActionError = error.localizedDescription
+                }
+            }
+        }
+    }
+
+    func keepInviteSeparate(_ prompt: MergePrompt) {
+        mergeActionError = nil
+        let suffix = prompt.creatorName.isEmpty ? "Shared" : prompt.creatorName
+        let title = "\(prompt.invitedListTitle) - \(suffix)"
+        repository.updateListTitle(listId: prompt.invitedListId, title: title) { [weak self] error in
+            Task { @MainActor in
+                if let error = error {
+                    self?.mergeActionError = error.localizedDescription
+                } else {
+                    self?.mergePrompt = nil
+                    self?.pendingInviteContext = nil
+                }
+            }
+        }
+    }
+
+    private func checkMergeConflictIfNeeded() {
+        guard mergePrompt == nil else { return }
+        guard let context = pendingInviteContext else { return }
+        guard lists.contains(where: { $0.id == context.listId }) else { return }
+        if let conflict = lists.first(where: {
+            $0.id != context.listId && $0.title.caseInsensitiveCompare(context.listTitle) == .orderedSame
+        }) {
+            mergePrompt = MergePrompt(
+                existingListId: conflict.id,
+                existingListTitle: conflict.title,
+                invitedListId: context.listId,
+                invitedListTitle: context.listTitle,
+                creatorName: context.creatorDisplayName
+            )
+        } else {
+            pendingInviteContext = nil
+        }
     }
 
     private func extractInviteToken(from url: URL) -> String? {
@@ -253,4 +315,33 @@ enum InviteError: LocalizedError {
             return "Please enter a valid email address."
         }
     }
+}
+
+private struct PendingInviteContext {
+    let listId: String
+    let listTitle: String
+    let creatorName: String
+    let creatorEmail: String
+
+    var creatorDisplayName: String {
+        if !creatorName.isEmpty { return creatorName }
+        if !creatorEmail.isEmpty { return creatorEmail }
+        return "Shared"
+    }
+
+    init(from invite: PendingInvite) {
+        listId = invite.listId
+        listTitle = invite.listTitle
+        creatorName = invite.creatorName
+        creatorEmail = invite.creatorEmail
+    }
+}
+
+struct MergePrompt: Identifiable {
+    let id = UUID()
+    let existingListId: String
+    let existingListTitle: String
+    let invitedListId: String
+    let invitedListTitle: String
+    let creatorName: String
 }

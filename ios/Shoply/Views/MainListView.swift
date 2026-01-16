@@ -93,6 +93,39 @@ struct MainListView: View {
         } message: { item in
             Text("Mark \"\(item.name)\" as bought?")
         }
+        .confirmationDialog(
+            "Merge lists?",
+            isPresented: Binding(
+                get: { session.mergePrompt != nil },
+                set: { if !$0 { session.mergePrompt = nil } }
+            )
+        ) {
+            Button("Merge") {
+                if let prompt = session.mergePrompt {
+                    session.mergeInvitedList(prompt)
+                }
+            }
+            Button("Keep Separate") {
+                if let prompt = session.mergePrompt {
+                    session.keepInviteSeparate(prompt)
+                }
+            }
+        } message: {
+            if let prompt = session.mergePrompt {
+                Text("You already have a list named \"\(prompt.existingListTitle)\". Merge it into \"\(prompt.invitedListTitle)\"?")
+            }
+        }
+        .alert(
+            "Merge failed",
+            isPresented: Binding(
+                get: { session.mergeActionError != nil },
+                set: { if !$0 { session.mergeActionError = nil } }
+            )
+        ) {
+            Button("OK") { session.mergeActionError = nil }
+        } message: {
+            Text(session.mergeActionError ?? "Unable to merge lists.")
+        }
     }
 
     private var header: some View {

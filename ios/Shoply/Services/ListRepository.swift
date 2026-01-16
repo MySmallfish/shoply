@@ -98,6 +98,70 @@ final class ListRepository {
         }
     }
 
+    func updateListTitle(listId: String, title: String, completion: ((Error?) -> Void)? = nil) {
+        db.collection("lists").document(listId).updateData([
+            "title": title,
+            "updatedAt": FieldValue.serverTimestamp()
+        ]) { error in
+            completion?(error)
+        }
+    }
+
+    func mergeLists(
+        sourceListId: String,
+        targetListId: String,
+        completion: @escaping (Result<Void, Error>) -> Void
+    ) {
+        let sourceRef = db.collection("lists").document(sourceListId).collection("items")
+        let targetRef = db.collection("lists").document(targetListId).collection("items")
+
+        targetRef.getDocuments { [weak self] targetSnapshot, targetError in
+            if let targetError {
+                completion(.failure(targetError))
+                return
+            }
+            let existingKeys = Set((targetSnapshot?.documents ?? []).compactMap { doc in
+                self?.itemKey(from: doc.data())
+            })
+
+            sourceRef.getDocuments { [weak self] sourceSnapshot, sourceError in
+                guard let self else { return }
+                if let sourceError {
+                    completion(.failure(sourceError))
+                    return
+                }
+                let batch = self.db.batch()
+                var added = 0
+                for doc in sourceSnapshot?.documents ?? [] {
+                    let data = doc.data()
+                    let key = self.itemKey(from: data)
+                    if key.isEmpty || existingKeys.contains(key) {
+                        continue
+                    }
+                    var payload = data
+                    payload["createdAt"] = FieldValue.serverTimestamp()
+                    payload["updatedAt"] = FieldValue.serverTimestamp()
+                    let newDoc = targetRef.document()
+                    batch.setData(payload, forDocument: newDoc)
+                    added += 1
+                }
+
+                if added == 0 {
+                    self.deleteList(listId: sourceListId, completion: completion)
+                    return
+                }
+
+                batch.commit { error in
+                    if let error {
+                        completion(.failure(error))
+                        return
+                    }
+                    self.deleteList(listId: sourceListId, completion: completion)
+                }
+            }
+        }
+    }
+
     func addItem(listId: String, name: String, barcode: String?, userId: String) {
         let itemRef = db.collection("lists").document(listId).collection("items").document()
         let now = FieldValue.serverTimestamp()
@@ -207,6 +271,70 @@ final class ListRepository {
 
     private func normalizedName(_ name: String) -> String {
         return name.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private func itemKey(from data: [String: Any]) -> String {
+        let barcode = data["barcode"] as? String ?? ""
+        if !barcode.isEmpty {
+            return "barcode:\(barcode)"
+        }
+        let normalized = data["normalizedName"] as? String ?? normalizedName(data["name"] as? String ?? "")
+        return normalized.isEmpty ? "" : "name:\(normalized)"
+    }
+
+    private func deleteList(listId: String, completion: @escaping (Result<Void, Error>) -> Void) {
+        let listRef = db.collection("lists").document(listId)
+        let group = DispatchGroup()
+        var firstError: Error?
+
+        let collections = [
+            listRef.collection("items"),
+            listRef.collection("members"),
+            listRef.collection("invites")
+        ]
+
+        for collection in collections {
+            group.enter()
+            deleteCollection(collection) { error in
+                if firstError == nil {
+                    firstError = error
+                }
+                group.leave()
+            }
+        }
+
+        group.notify(queue: .main) {
+            if let error = firstError {
+                completion(.failure(error))
+                return
+            }
+            listRef.delete { error in
+                if let error {
+                    completion(.failure(error))
+                } else {
+                    completion(.success(()))
+                }
+            }
+        }
+    }
+
+    private func deleteCollection(_ collection: CollectionReference, completion: @escaping (Error?) -> Void) {
+        collection.getDocuments { [weak self] snapshot, error in
+            guard let self else { return }
+            if let error {
+                completion(error)
+                return
+            }
+            guard let documents = snapshot?.documents, !documents.isEmpty else {
+                completion(nil)
+                return
+            }
+            let batch = self.db.batch()
+            documents.forEach { batch.deleteDocument($0.reference) }
+            batch.commit { commitError in
+                completion(commitError)
+            }
+        }
     }
 
     private func pendingInvite(from doc: QueryDocumentSnapshot) -> PendingInvite? {
