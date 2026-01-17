@@ -271,20 +271,18 @@ class ListRepository {
                 onComplete(itemsError)
                 return@deleteCollection
             }
-            deleteCollection(listRef.collection("members")) { membersError ->
-                if (membersError != null) {
-                    onComplete(membersError)
+            deleteCollection(listRef.collection("invites")) { invitesError ->
+                if (invitesError != null) {
+                    onComplete(invitesError)
                     return@deleteCollection
                 }
-                deleteCollection(listRef.collection("invites")) { invitesError ->
-                    if (invitesError != null) {
-                        onComplete(invitesError)
-                        return@deleteCollection
+                listRef.delete()
+                    .addOnSuccessListener {
+                        deleteCollection(listRef.collection("members")) { membersError ->
+                            onComplete(membersError)
+                        }
                     }
-                    listRef.delete()
-                        .addOnSuccessListener { onComplete(null) }
-                        .addOnFailureListener { error -> onComplete(error) }
-                }
+                    .addOnFailureListener { error -> onComplete(error) }
             }
         }
     }

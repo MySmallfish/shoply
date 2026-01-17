@@ -284,35 +284,30 @@ final class ListRepository {
 
     private func deleteList(listId: String, completion: @escaping (Result<Void, Error>) -> Void) {
         let listRef = db.collection("lists").document(listId)
-        let group = DispatchGroup()
-        var firstError: Error?
 
-        let collections = [
-            listRef.collection("items"),
-            listRef.collection("members"),
-            listRef.collection("invites")
-        ]
-
-        for collection in collections {
-            group.enter()
-            deleteCollection(collection) { error in
-                if firstError == nil {
-                    firstError = error
-                }
-                group.leave()
-            }
-        }
-
-        group.notify(queue: .main) {
-            if let error = firstError {
-                completion(.failure(error))
+        deleteCollection(listRef.collection("items")) { [weak self] itemsError in
+            guard let self else { return }
+            if let itemsError {
+                completion(.failure(itemsError))
                 return
             }
-            listRef.delete { error in
-                if let error {
-                    completion(.failure(error))
-                } else {
-                    completion(.success(()))
+            self.deleteCollection(listRef.collection("invites")) { invitesError in
+                if let invitesError {
+                    completion(.failure(invitesError))
+                    return
+                }
+                listRef.delete { listError in
+                    if let listError {
+                        completion(.failure(listError))
+                        return
+                    }
+                    self.deleteCollection(listRef.collection("members")) { membersError in
+                        if let membersError {
+                            completion(.failure(membersError))
+                        } else {
+                            completion(.success(()))
+                        }
+                    }
                 }
             }
         }
