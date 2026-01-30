@@ -11,6 +11,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -23,6 +24,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -181,8 +183,7 @@ fun ListScreen(viewModel: MainViewModel) {
     var scannedDraft by remember { mutableStateOf(ItemDetailsDraft()) }
     var adjustItem by remember { mutableStateOf<ShoppingItem?>(null) }
     var adjustMode by remember { mutableStateOf(QuantityMode.BOUGHT) }
-    var adjustAmount by remember { mutableStateOf("") }
-    var adjustDefaultAmount by remember { mutableStateOf(1) }
+    var adjustAmount by remember { mutableStateOf(1) }
     var selectedSuggestion by remember { mutableStateOf<CatalogItem?>(null) }
     var showDetails by remember { mutableStateOf(false) }
     var detailsDraft by remember { mutableStateOf(ItemDetailsDraft()) }
@@ -207,8 +208,7 @@ fun ListScreen(viewModel: MainViewModel) {
         val defaultAmount = if (defaultMode == QuantityMode.BOUGHT) maxOf(1, item.quantity) else 1
         adjustItem = item
         adjustMode = defaultMode
-        adjustDefaultAmount = defaultAmount
-        adjustAmount = defaultAmount.toString()
+        adjustAmount = defaultAmount
     }
 
     LaunchedEffect(scanCode) {
@@ -490,11 +490,9 @@ fun ListScreen(viewModel: MainViewModel) {
             onAmountChange = { adjustAmount = it },
             onDismiss = { adjustItem = null },
             onApply = {
-                val amount = adjustAmount.trim().toIntOrNull() ?: adjustDefaultAmount
-                if (amount > 0) {
-                    val delta = if (adjustMode == QuantityMode.BOUGHT) -amount else amount
-                    viewModel.adjustQuantity(item, delta)
-                }
+                val resolved = maxOf(1, adjustAmount)
+                val delta = if (adjustMode == QuantityMode.BOUGHT) -resolved else resolved
+                viewModel.adjustQuantity(item, delta)
                 adjustItem = null
             }
         )
@@ -1165,9 +1163,9 @@ private fun ItemDetailsDialog(
 private fun AdjustQuantityDialog(
     item: ShoppingItem,
     mode: QuantityMode,
-    amount: String,
+    amount: Int,
     onModeChange: (QuantityMode) -> Unit,
-    onAmountChange: (String) -> Unit,
+    onAmountChange: (Int) -> Unit,
     onDismiss: () -> Unit,
     onApply: () -> Unit
 ) {
@@ -1196,12 +1194,33 @@ private fun AdjustQuantityDialog(
                     }
                 }
                 Spacer(modifier = Modifier.height(12.dp))
-                TextField(
-                    value = amount,
-                    onValueChange = onAmountChange,
-                    placeholder = { Text("Amount") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done)
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterHorizontally),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedButton(
+                        onClick = { if (amount > 1) onAmountChange(amount - 1) },
+                        modifier = Modifier.size(56.dp),
+                        shape = CircleShape,
+                        contentPadding = PaddingValues(0.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.Remove, contentDescription = "Decrease amount")
+                    }
+                    Text(
+                        text = amount.coerceAtLeast(1).toString(),
+                        fontSize = 36.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    OutlinedButton(
+                        onClick = { onAmountChange(amount + 1) },
+                        modifier = Modifier.size(56.dp),
+                        shape = CircleShape,
+                        contentPadding = PaddingValues(0.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.Add, contentDescription = "Increase amount")
+                    }
+                }
             }
         },
         confirmButton = {

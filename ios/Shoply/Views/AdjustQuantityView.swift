@@ -4,9 +4,8 @@ struct AdjustQuantityView: View {
     private let item: ShoppingItem
     private let onApply: (Int) -> Void
 
-    @State private var amountText: String
+    @State private var amount: Int
     @State private var mode: QuantityMode
-    private let defaultAmount: Int
 
     @Environment(\.dismiss) private var dismiss
 
@@ -14,43 +13,74 @@ struct AdjustQuantityView: View {
         self.item = item
         let defaultMode: QuantityMode = item.quantity <= 0 ? .need : .bought
         self._mode = State(initialValue: defaultMode)
-        let amount = defaultMode == .bought ? max(1, item.quantity) : 1
-        self.defaultAmount = amount
-        self._amountText = State(initialValue: "\(amount)")
+        let startingAmount = defaultMode == .bought ? max(1, item.quantity) : 1
+        self._amount = State(initialValue: startingAmount)
         self.onApply = onApply
     }
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section("Item") {
+            VStack(spacing: 20) {
+                VStack(alignment: .leading, spacing: 6) {
                     Text(item.name)
+                        .font(.system(size: 18, weight: .semibold))
                     Text("Left to buy: \(item.quantity)")
+                        .font(.system(size: 14))
                         .foregroundColor(.secondary)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
 
-                Section("How much did you buy?") {
-                    Picker("Mode", selection: $mode) {
-                        ForEach(QuantityMode.allCases) { selection in
-                            Text(selection.title).tag(selection)
-                        }
+                Picker("Mode", selection: $mode) {
+                    ForEach(QuantityMode.allCases) { selection in
+                        Text(selection.title).tag(selection)
                     }
-                    .pickerStyle(.segmented)
-
-                    TextField("Amount", text: $amountText)
-                        .keyboardType(.numberPad)
                 }
+                .pickerStyle(.segmented)
+
+                Text("How much?")
+                    .font(.system(size: 14, weight: .semibold))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                HStack(spacing: 24) {
+                    Button {
+                        if amount > 1 {
+                            amount -= 1
+                        }
+                    } label: {
+                        Image(systemName: "minus")
+                            .font(.system(size: 20, weight: .bold))
+                            .frame(width: 56, height: 56)
+                            .background(Color(.secondarySystemBackground))
+                            .clipShape(Circle())
+                    }
+
+                    Text("\(max(1, amount))")
+                        .font(.system(size: 44, weight: .bold, design: .rounded))
+                        .frame(minWidth: 80)
+
+                    Button {
+                        amount += 1
+                    } label: {
+                        Image(systemName: "plus")
+                            .font(.system(size: 20, weight: .bold))
+                            .frame(width: 56, height: 56)
+                            .background(Color(.secondarySystemBackground))
+                            .clipShape(Circle())
+                    }
+                }
+                .frame(maxWidth: .infinity)
+
+                Spacer()
             }
+            .padding(20)
             .navigationTitle("Update Item")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Apply") {
-                        let trimmed = amountText.trimmingCharacters(in: .whitespacesAndNewlines)
-                        let amount = Int(trimmed) ?? defaultAmount
-                        if amount > 0 {
-                            let delta = mode == .bought ? -amount : amount
-                            onApply(delta)
-                        }
+                        let resolved = max(1, amount)
+                        let delta = mode == .bought ? -resolved : resolved
+                        onApply(delta)
                         dismiss()
                     }
                 }

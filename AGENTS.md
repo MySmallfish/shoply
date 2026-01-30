@@ -21,7 +21,7 @@ This file captures current project state, key decisions, build steps, and known 
 - "Enter/Done" on item text field triggers Add (same as plus button) on iOS and Android.
 - Default "Grocery" list created at startup if missing; it becomes current list.
 - Items now use quantity-based flow (no checklist UI). Quantities can go negative; list sorted by quantity left to buy.
-- Tapping an item opens a "How much did you buy?" dialog with Bought/Need toggle; +/- still adjust quantity by 1.
+- Tapping an item opens a "How much did you buy?" dialog with Bought/Need toggle and large +/- amount controls; +/- in the list still adjust quantity by 1.
 - Barcode scan of an existing item opens the adjust dialog; otherwise prompt to add item details.
 - iOS Google Sign-In URL scheme restored in Info.plist.
 - Invites now write directly to Firestore only (no email or push); on success the app opens the system share sheet with an invite link.
