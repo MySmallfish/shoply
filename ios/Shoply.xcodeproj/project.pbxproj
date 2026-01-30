@@ -9,6 +9,11 @@
 /* Begin PBXBuildFile section */
 		0237323CFBA841F63783D2BD /* PendingInvitesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49603238333712C53AD580AB /* PendingInvitesView.swift */; };
 		03B2AEC10ACE265397C4E6BA /* InviteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99D8A386D4F9FB95CB69BA2C /* InviteView.swift */; };
+		0F1E2D3C4B5A69788796A5B4 /* AdjustQuantityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F708192A3B4C5 /* AdjustQuantityView.swift */; };
+		A7B8C9D0E1F2A3B4C5D6E7F8 /* ItemDetailsForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D2E3F4A5B6C7D8E9F0A1B2 /* ItemDetailsForm.swift */; };
+		B8C9D0E1F2A3B4C5D6E7F8A9 /* AddItemDetailsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E3F4A5B6C7D8E9F0A1B2C3 /* AddItemDetailsView.swift */; };
+		E5F4A6B7C8D9E0F1A2B3C4D5 /* CatalogItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1C0F1A0B1C2D3E4F5A6B7C8 /* CatalogItem.swift */; };
+		F6A5B7C8D9E0F1A2B3C4D5E6 /* ItemDetailsDraft.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2D1E2F3A4B5C6D7E8F9A0B1 /* ItemDetailsDraft.swift */; };
 		16CF7383E7DF51F2B1290294 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 1F6F4F172CD4078B988FBE9B /* FirebaseMessaging */; };
 		1D3ADB6163264737B4DB1BD5 /* ShareSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E062A0378834EBD92C6D380 /* ShareSheet.swift */; };
 		23B120F943A1F2187E4C1874 /* ListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD360D10D43331CF341487E1 /* ListViewModel.swift */; };
@@ -48,6 +53,11 @@
 		00168C4A3F3918E76D5C4BD9 /* ListRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListRepository.swift; sourceTree = "<group>"; };
 		03BB3C47464185BFE9B24692 /* ListSwitcherView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListSwitcherView.swift; sourceTree = "<group>"; };
 		058C21FA518A4D96993AA66F /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
+		1A2B3C4D5E6F708192A3B4C5 /* AdjustQuantityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdjustQuantityView.swift; sourceTree = "<group>"; };
+		A1C0F1A0B1C2D3E4F5A6B7C8 /* CatalogItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogItem.swift; sourceTree = "<group>"; };
+		B2D1E2F3A4B5C6D7E8F9A0B1 /* ItemDetailsDraft.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemDetailsDraft.swift; sourceTree = "<group>"; };
+		C3D2E3F4A5B6C7D8E9F0A1B2 /* ItemDetailsForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemDetailsForm.swift; sourceTree = "<group>"; };
+		D4E3F4A5B6C7D8E9F0A1B2C3 /* AddItemDetailsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddItemDetailsView.swift; sourceTree = "<group>"; };
 		0E062A0378834EBD92C6D380 /* ShareSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareSheet.swift; sourceTree = "<group>"; };
 		11C02C7A731FAA16B4391425 /* ItemRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemRow.swift; sourceTree = "<group>"; };
 		1D49C722209F2ED54D9988B4 /* PendingInvite.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PendingInvite.swift; sourceTree = "<group>"; };
@@ -126,6 +136,8 @@
 		508A6606239ACB2657162B75 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				A1C0F1A0B1C2D3E4F5A6B7C8 /* CatalogItem.swift */,
+				B2D1E2F3A4B5C6D7E8F9A0B1 /* ItemDetailsDraft.swift */,
 				60FAE143E44C62E50FA86909 /* ListMember.swift */,
 				1D49C722209F2ED54D9988B4 /* PendingInvite.swift */,
 				59C20011C78CCFF2C3B7A815 /* ShoppingItem.swift */,
@@ -168,10 +180,13 @@
 		BC3E100AEA6FAB26467F8BDC /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				1A2B3C4D5E6F708192A3B4C5 /* AdjustQuantityView.swift */,
 				80D03412938DE2CDB60EFA40 /* AddItemBar.swift */,
+				D4E3F4A5B6C7D8E9F0A1B2C3 /* AddItemDetailsView.swift */,
 				7A879729CCF1E465128A39D5 /* AddScannedItemView.swift */,
 				C4189A99E249916DA0346348 /* CreateListView.swift */,
 				99D8A386D4F9FB95CB69BA2C /* InviteView.swift */,
+				C3D2E3F4A5B6C7D8E9F0A1B2 /* ItemDetailsForm.swift */,
 				11C02C7A731FAA16B4391425 /* ItemRow.swift */,
 				691FEFF26748431AC7203851 /* JoinListView.swift */,
 				03BB3C47464185BFE9B24692 /* ListSwitcherView.swift */,
@@ -281,14 +296,19 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0F1E2D3C4B5A69788796A5B4 /* AdjustQuantityView.swift in Sources */,
 				F1FFA0E2BCDF9A2DE16BDF55 /* AddItemBar.swift in Sources */,
+				B8C9D0E1F2A3B4C5D6E7F8A9 /* AddItemDetailsView.swift in Sources */,
 				7C0DC3B394B0683646681BCF /* AddScannedItemView.swift in Sources */,
 				9FB4330A991A459036666EAA /* AppDelegate.swift in Sources */,
 				6316092DC306EC328E8E7A9A /* AuthService.swift in Sources */,
+				E5F4A6B7C8D9E0F1A2B3C4D5 /* CatalogItem.swift in Sources */,
 				3A9BCA0B348B700D31D55B71 /* CreateListView.swift in Sources */,
 				C01C5328B42691319A4809B8 /* InviteService.swift in Sources */,
 				03B2AEC10ACE265397C4E6BA /* InviteView.swift in Sources */,
+				A7B8C9D0E1F2A3B4C5D6E7F8 /* ItemDetailsForm.swift in Sources */,
 				29623E59DCF667FB1EBEC4C7 /* ItemRow.swift in Sources */,
+				F6A5B7C8D9E0F1A2B3C4D5E6 /* ItemDetailsDraft.swift in Sources */,
 				B0FCB893A4D500B44E2A2A03 /* JoinListView.swift in Sources */,
 				E3B27DD6853A6D3478A5915F /* ListMember.swift in Sources */,
 				C7EF1DEFBE489BFE836801CD /* ListRepository.swift in Sources */,

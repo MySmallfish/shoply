@@ -1,7 +1,7 @@
-import Foundation
 import FirebaseFirestore
+import Foundation
 
-struct ShoppingItem: Identifiable {
+struct CatalogItem: Identifiable {
     let id: String
     let name: String
     let normalizedName: String
@@ -9,13 +9,8 @@ struct ShoppingItem: Identifiable {
     let price: Double?
     let itemDescription: String?
     let icon: String?
-    let quantity: Int
-    let isBought: Bool
     let createdAt: Date
-    let createdBy: String
     let updatedAt: Date
-    let boughtAt: Date?
-    let boughtBy: String?
 
     init(id: String, data: [String: Any]) {
         self.id = id
@@ -29,16 +24,7 @@ struct ShoppingItem: Identifiable {
         }
         self.itemDescription = data["description"] as? String
         self.icon = data["icon"] as? String
-        if let value = data["quantity"] as? NSNumber {
-            self.quantity = value.intValue
-        } else {
-            self.quantity = data["quantity"] as? Int ?? 1
-        }
-        self.isBought = data["isBought"] as? Bool ?? false
         self.createdAt = (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
-        self.createdBy = data["createdBy"] as? String ?? ""
         self.updatedAt = (data["updatedAt"] as? Timestamp)?.dateValue() ?? Date()
-        self.boughtAt = (data["boughtAt"] as? Timestamp)?.dateValue()
-        self.boughtBy = data["boughtBy"] as? String
     }
 }

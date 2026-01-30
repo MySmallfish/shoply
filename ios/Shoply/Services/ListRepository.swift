@@ -24,7 +24,13 @@ final class ListRepository {
                 let items = snapshot?.documents.map {
                     ShoppingItem(id: $0.documentID, data: $0.data())
                 } ?? []
-                onChange(items)
+                let ordered = items.sorted {
+                    if $0.quantity != $1.quantity {
+                        return $0.quantity > $1.quantity
+                    }
+                    return $0.updatedAt > $1.updatedAt
+                }
+                onChange(ordered)
             }
     }
 
@@ -62,6 +68,17 @@ final class ListRepository {
             let invites = snapshot?.documents.compactMap { self?.pendingInvite(from: $0) } ?? []
             onChange(invites.filter { $0.status == "pending" })
         }
+    }
+
+    func listenToCatalogItems(userId: String, onChange: @escaping ([CatalogItem]) -> Void) -> ListenerRegistration {
+        return db.collection("users").document(userId).collection("catalog")
+            .order(by: "updatedAt", descending: true)
+            .addSnapshotListener { snapshot, _ in
+                let items = snapshot?.documents.map {
+                    CatalogItem(id: $0.documentID, data: $0.data())
+                } ?? []
+                onChange(items)
+            }
     }
 
     func createList(title: String, ownerId: String, completion: @escaping (Result<String, Error>) -> Void) {
@@ -162,7 +179,15 @@ final class ListRepository {
         }
     }
 
-    func addItem(listId: String, name: String, barcode: String?, userId: String) {
+    func addItem(
+        listId: String,
+        name: String,
+        barcode: String?,
+        price: Double?,
+        description: String?,
+        icon: String?,
+        userId: String
+    ) {
         let itemRef = db.collection("lists").document(listId).collection("items").document()
         let now = FieldValue.serverTimestamp()
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -170,6 +195,7 @@ final class ListRepository {
         var data: [String: Any] = [
             "name": trimmed,
             "normalizedName": normalizedName(trimmed),
+            "quantity": 1,
             "isBought": false,
             "createdAt": now,
             "createdBy": userId,
@@ -179,8 +205,96 @@ final class ListRepository {
         if let barcode = barcode {
             data["barcode"] = barcode
         }
+        if let price = price {
+            data["price"] = price
+        }
+        if let description, !description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            data["description"] = description
+        }
+        if let icon, !icon.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            data["icon"] = icon
+        }
 
         itemRef.setData(data)
+        touchList(listId: listId)
+    }
+
+    func adjustQuantity(
+        listId: String,
+        itemId: String,
+        delta: Int,
+        markUnbought: Bool,
+        barcode: String?,
+        price: Double?,
+        description: String?,
+        icon: String?
+    ) {
+        let itemRef = db.collection("lists").document(listId).collection("items").document(itemId)
+        db.runTransaction({ transaction, errorPointer in
+            do {
+                let snapshot = try transaction.getDocument(itemRef)
+                let current: Int
+                if let value = snapshot.data()?["quantity"] as? NSNumber {
+                    current = value.intValue
+                } else if let value = snapshot.data()?["quantity"] as? Int {
+                    current = value
+                } else {
+                    current = 1
+                }
+                let next = current + delta
+                var updates: [String: Any] = [
+                    "quantity": next,
+                    "updatedAt": FieldValue.serverTimestamp()
+                ]
+
+                if markUnbought {
+                    updates["isBought"] = false
+                    updates["boughtAt"] = FieldValue.delete()
+                    updates["boughtBy"] = FieldValue.delete()
+                }
+
+                if let barcode, !barcode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    updates["barcode"] = barcode
+                }
+                if let price = price {
+                    updates["price"] = price
+                }
+                if let description, !description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    updates["description"] = description
+                }
+                if let icon, !icon.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    updates["icon"] = icon
+                }
+
+                transaction.updateData(updates, forDocument: itemRef)
+            } catch let error {
+                errorPointer?.pointee = error as NSError
+                return nil
+            }
+            return nil
+        }, completion: { _, _ in })
+        touchList(listId: listId)
+    }
+
+    func updateQuantity(
+        listId: String,
+        itemId: String,
+        quantity: Int,
+        markUnbought: Bool
+    ) {
+        let itemRef = db.collection("lists").document(listId).collection("items").document(itemId)
+        var updates: [String: Any] = [
+            "quantity": quantity,
+            "updatedAt": FieldValue.serverTimestamp()
+        ]
+
+        if markUnbought {
+            updates["isBought"] = false
+            updates["boughtAt"] = FieldValue.delete()
+            updates["boughtBy"] = FieldValue.delete()
+        }
+
+        itemRef.updateData(updates)
         touchList(listId: listId)
     }
 
@@ -197,6 +311,31 @@ final class ListRepository {
         } else {
             updates["boughtAt"] = FieldValue.serverTimestamp()
             updates["boughtBy"] = userId
+        }
+
+        itemRef.updateData(updates)
+        touchList(listId: listId)
+    }
+
+    func deleteItem(listId: String, itemId: String) {
+        let itemRef = db.collection("lists").document(listId).collection("items").document(itemId)
+        itemRef.delete()
+        touchList(listId: listId)
+    }
+
+    func setBought(listId: String, itemId: String, isBought: Bool, userId: String) {
+        let itemRef = db.collection("lists").document(listId).collection("items").document(itemId)
+        var updates: [String: Any] = [
+            "isBought": isBought,
+            "updatedAt": FieldValue.serverTimestamp()
+        ]
+
+        if isBought {
+            updates["boughtAt"] = FieldValue.serverTimestamp()
+            updates["boughtBy"] = userId
+        } else {
+            updates["boughtAt"] = FieldValue.delete()
+            updates["boughtBy"] = FieldValue.delete()
         }
 
         itemRef.updateData(updates)
@@ -261,6 +400,46 @@ final class ListRepository {
             "lastListId": listId,
             "lastSeenAt": FieldValue.serverTimestamp()
         ], merge: true)
+    }
+
+    func upsertCatalogItem(
+        userId: String,
+        itemId: String?,
+        name: String,
+        barcode: String?,
+        price: Double?,
+        description: String?,
+        icon: String?
+    ) {
+        let catalogRef = db.collection("users").document(userId).collection("catalog")
+        let docRef = itemId != nil ? catalogRef.document(itemId!) : catalogRef.document()
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+
+        var data: [String: Any] = [
+            "name": trimmed,
+            "normalizedName": normalizedName(trimmed),
+            "updatedAt": FieldValue.serverTimestamp()
+        ]
+
+        if itemId == nil {
+            data["createdAt"] = FieldValue.serverTimestamp()
+        }
+
+        if let barcode, !barcode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            data["barcode"] = barcode
+        }
+        if let price = price {
+            data["price"] = price
+        }
+        if let description, !description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            data["description"] = description
+        }
+        if let icon, !icon.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            data["icon"] = icon
+        }
+
+        docRef.setData(data, merge: true)
     }
 
     private func touchList(listId: String) {

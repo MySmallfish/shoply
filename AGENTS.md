@@ -20,7 +20,9 @@ This file captures current project state, key decisions, build steps, and known 
 - Pull-to-refresh added on iOS and Android.
 - "Enter/Done" on item text field triggers Add (same as plus button) on iOS and Android.
 - Default "Grocery" list created at startup if missing; it becomes current list.
-- Barcode scan matches existing item -> prompt to mark as bought; otherwise prompt to add.
+- Items now use quantity-based flow (no checklist UI). Quantities can go negative; list sorted by quantity left to buy.
+- Tapping an item opens a "How much did you buy?" dialog with Bought/Need toggle; +/- still adjust quantity by 1.
+- Barcode scan of an existing item opens the adjust dialog; otherwise prompt to add item details.
 - iOS Google Sign-In URL scheme restored in Info.plist.
 - Invites now write directly to Firestore only (no email or push); on success the app opens the system share sheet with an invite link.
 - Invite docs include `emailLower`, `allowedEmails`, `creatorName`, and `creatorEmail` for compatibility.
@@ -134,13 +136,13 @@ AVD used earlier: `RedoxApi35`.
 ### iOS
 - Custom header (list dropdown left, member/invite/scan/menu icons right).
 - Background: `systemGroupedBackground`.
-- List: `.plain` style; empty state overlays the list to keep pull-to-refresh.
+- List: `.plain` style; single section sorted by quantity; empty state overlays the list to keep pull-to-refresh.
 - Add bar pinned in `safeAreaInset` with rounded text field + circular plus.
 - Scanner view uses `.resizeAspect` to avoid zoomed camera preview.
 
 ### Android
 - Material3 `TopAppBar` with list dropdown + actions.
-- `LazyColumn` with sections for Active/Bought.
+- `LazyColumn` with single list sorted by quantity; item tap opens adjust dialog.
 - Bottom add bar with TextField + plus button; IME Done triggers add.
 - FloatingActionButton triggers scanner.
 - Pull-to-refresh indicator at top center.
@@ -174,4 +176,4 @@ AVD used earlier: `RedoxApi35`.
 1. Verify iOS and Android pull-to-refresh shows spinner and does not reset list state.
 2. Verify Enter/Done on keyboard triggers add and clears input.
 3. Test invite lifecycle (send invite -> accept -> member appears).
-4. Test barcode scan prompt for existing item.
+4. Test barcode scan -> adjust dialog for existing item.

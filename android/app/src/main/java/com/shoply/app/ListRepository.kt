@@ -22,6 +22,19 @@ class ListRepository {
             .orderBy("createdAt")
             .addSnapshotListener { snapshot, _ ->
                 val items = snapshot?.documents?.map { it.toShoppingItem() } ?: emptyList()
+                val ordered = items.sortedWith(
+                    compareByDescending<ShoppingItem> { it.quantity }
+                        .thenByDescending { it.updatedAt }
+                )
+                onChange(ordered)
+            }
+    }
+
+    fun listenToCatalogItems(userId: String, onChange: (List<CatalogItem>) -> Unit): ListenerRegistration {
+        return db.collection("users").document(userId).collection("catalog")
+            .orderBy("updatedAt", com.google.firebase.firestore.Query.Direction.DESCENDING)
+            .addSnapshotListener { snapshot, _ ->
+                val items = snapshot?.documents?.map { it.toCatalogItem() } ?: emptyList()
                 onChange(items)
             }
     }
@@ -138,7 +151,15 @@ class ListRepository {
             .addOnFailureListener { error -> onComplete(error) }
     }
 
-    fun addItem(listId: String, name: String, barcode: String?, userId: String) {
+    fun addItem(
+        listId: String,
+        name: String,
+        barcode: String?,
+        price: Double?,
+        description: String?,
+        icon: String?,
+        userId: String
+    ) {
         val itemRef = db.collection("lists").document(listId).collection("items").document()
         val now = FieldValue.serverTimestamp()
         val trimmed = name.trim()
@@ -146,6 +167,7 @@ class ListRepository {
         val data = hashMapOf(
             "name" to trimmed,
             "normalizedName" to normalizedName(trimmed),
+            "quantity" to 1,
             "isBought" to false,
             "createdAt" to now,
             "createdBy" to userId,
@@ -154,6 +176,15 @@ class ListRepository {
 
         if (!barcode.isNullOrBlank()) {
             data["barcode"] = barcode
+        }
+        if (price != null) {
+            data["price"] = price
+        }
+        if (!description.isNullOrBlank()) {
+            data["description"] = description
+        }
+        if (!icon.isNullOrBlank()) {
+            data["icon"] = icon
         }
 
         itemRef.set(data)
@@ -175,6 +206,88 @@ class ListRepository {
             updates["boughtBy"] = userId
         }
 
+        itemRef.update(updates)
+        touchList(listId)
+    }
+
+    fun setBought(listId: String, itemId: String, isBought: Boolean, userId: String) {
+        val itemRef = db.collection("lists").document(listId).collection("items").document(itemId)
+        val updates = hashMapOf<String, Any>(
+            "isBought" to isBought,
+            "updatedAt" to FieldValue.serverTimestamp()
+        )
+
+        if (isBought) {
+            updates["boughtAt"] = FieldValue.serverTimestamp()
+            updates["boughtBy"] = userId
+        } else {
+            updates["boughtAt"] = FieldValue.delete()
+            updates["boughtBy"] = FieldValue.delete()
+        }
+
+        itemRef.update(updates)
+        touchList(listId)
+    }
+
+    fun deleteItem(listId: String, itemId: String) {
+        val itemRef = db.collection("lists").document(listId).collection("items").document(itemId)
+        itemRef.delete()
+        touchList(listId)
+    }
+
+    fun adjustQuantity(
+        listId: String,
+        itemId: String,
+        delta: Int,
+        markUnbought: Boolean,
+        barcode: String?,
+        price: Double?,
+        description: String?,
+        icon: String?
+    ) {
+        val itemRef = db.collection("lists").document(listId).collection("items").document(itemId)
+        db.runTransaction { transaction ->
+            val snapshot = transaction.get(itemRef)
+            val current = (snapshot.getLong("quantity")?.toInt() ?: 1)
+            val next = current + delta
+            val updates = hashMapOf<String, Any>(
+                "quantity" to next,
+                "updatedAt" to FieldValue.serverTimestamp()
+            )
+            if (markUnbought) {
+                updates["isBought"] = false
+                updates["boughtAt"] = FieldValue.delete()
+                updates["boughtBy"] = FieldValue.delete()
+            }
+            if (!barcode.isNullOrBlank()) {
+                updates["barcode"] = barcode
+            }
+            if (price != null) {
+                updates["price"] = price
+            }
+            if (!description.isNullOrBlank()) {
+                updates["description"] = description
+            }
+            if (!icon.isNullOrBlank()) {
+                updates["icon"] = icon
+            }
+            transaction.update(itemRef, updates)
+            null
+        }
+        touchList(listId)
+    }
+
+    fun updateQuantity(listId: String, itemId: String, quantity: Int, markUnbought: Boolean) {
+        val itemRef = db.collection("lists").document(listId).collection("items").document(itemId)
+        val updates = hashMapOf<String, Any>(
+            "quantity" to quantity,
+            "updatedAt" to FieldValue.serverTimestamp()
+        )
+        if (markUnbought) {
+            updates["isBought"] = false
+            updates["boughtAt"] = FieldValue.delete()
+            updates["boughtBy"] = FieldValue.delete()
+        }
         itemRef.update(updates)
         touchList(listId)
     }
@@ -246,6 +359,42 @@ class ListRepository {
             ),
             com.google.firebase.firestore.SetOptions.merge()
         )
+    }
+
+    fun upsertCatalogItem(
+        userId: String,
+        itemId: String?,
+        name: String,
+        barcode: String?,
+        price: Double?,
+        description: String?,
+        icon: String?
+    ) {
+        val catalogRef = db.collection("users").document(userId).collection("catalog")
+        val docRef = if (itemId != null) catalogRef.document(itemId) else catalogRef.document()
+        val trimmed = name.trim()
+        if (trimmed.isEmpty()) return
+        val data = hashMapOf<String, Any>(
+            "name" to trimmed,
+            "normalizedName" to normalizedName(trimmed),
+            "updatedAt" to FieldValue.serverTimestamp()
+        )
+        if (itemId == null) {
+            data["createdAt"] = FieldValue.serverTimestamp()
+        }
+        if (!barcode.isNullOrBlank()) {
+            data["barcode"] = barcode
+        }
+        if (price != null) {
+            data["price"] = price
+        }
+        if (!description.isNullOrBlank()) {
+            data["description"] = description
+        }
+        if (!icon.isNullOrBlank()) {
+            data["icon"] = icon
+        }
+        docRef.set(data, com.google.firebase.firestore.SetOptions.merge())
     }
 
     private fun touchList(listId: String) {

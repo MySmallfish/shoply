@@ -29,6 +29,10 @@ service cloud.firestore {
       match /tokens/{tokenId} {
         allow read, write: if isSignedIn() && request.auth.uid == userId;
       }
+
+      match /catalog/{itemId} {
+        allow read, write: if isSignedIn() && request.auth.uid == userId;
+      }
     }
 
     match /lists/{listId} {

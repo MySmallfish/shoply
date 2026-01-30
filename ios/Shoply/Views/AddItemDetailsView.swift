@@ -1,30 +1,28 @@
 import SwiftUI
 
-struct AddScannedItemView: View {
-    let barcode: String
+struct AddItemDetailsView: View {
     @State private var draft: ItemDetailsDraft
-    let onAdd: (ItemDetailsDraft) -> Void
+    private let allowBarcodeEdit: Bool
+    let onSave: (ItemDetailsDraft) -> Void
 
     @Environment(\.dismiss) private var dismiss
 
-    init(barcode: String, draft: ItemDetailsDraft, onAdd: @escaping (ItemDetailsDraft) -> Void) {
-        self.barcode = barcode
-        var seeded = draft
-        seeded.barcode = barcode
-        self._draft = State(initialValue: seeded)
-        self.onAdd = onAdd
+    init(draft: ItemDetailsDraft, allowBarcodeEdit: Bool, onSave: @escaping (ItemDetailsDraft) -> Void) {
+        self._draft = State(initialValue: draft)
+        self.allowBarcodeEdit = allowBarcodeEdit
+        self.onSave = onSave
     }
 
     var body: some View {
         NavigationStack {
             Form {
-                ItemDetailsForm(draft: $draft, allowBarcodeEdit: false)
+                ItemDetailsForm(draft: $draft, allowBarcodeEdit: allowBarcodeEdit)
             }
-            .navigationTitle("Add Item")
+            .navigationTitle("Item Details")
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Add") {
-                        onAdd(draft)
+                    Button("Save") {
+                        onSave(draft)
                         dismiss()
                     }
                     .disabled(draft.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)

@@ -2,21 +2,48 @@ import SwiftUI
 
 struct ItemRow: View {
     let item: ShoppingItem
-    let onToggle: () -> Void
+    let onTap: () -> Void
+    let onIncrement: () -> Void
+    let onDecrement: () -> Void
 
     var body: some View {
         HStack(spacing: 12) {
-            Button(action: onToggle) {
-                Image(systemName: item.isBought ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 20))
-                    .foregroundColor(item.isBought ? .green : .secondary)
-            }
+            Button(action: onTap) {
+                HStack(spacing: 8) {
+                    if let icon = item.icon, !icon.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        Text(icon)
+                            .font(.system(size: 18))
+                    }
 
-            Text(item.name)
-                .strikethrough(item.isBought, color: .secondary)
-                .foregroundColor(item.isBought ? .secondary : .primary)
+                    Text(item.name)
+                        .foregroundColor(.primary)
+                }
+            }
+            .buttonStyle(.plain)
 
             Spacer()
+
+            HStack(spacing: 6) {
+                Button(action: onDecrement) {
+                    Image(systemName: "minus")
+                        .font(.system(size: 12, weight: .bold))
+                        .frame(width: 26, height: 26)
+                        .background(Color(.secondarySystemBackground))
+                        .clipShape(Circle())
+                }
+                .buttonStyle(.borderless)
+                Text("\(item.quantity)")
+                    .font(.system(size: 14, weight: .semibold))
+                    .frame(minWidth: 18)
+                Button(action: onIncrement) {
+                    Image(systemName: "plus")
+                        .font(.system(size: 12, weight: .bold))
+                        .frame(width: 26, height: 26)
+                        .background(Color(.secondarySystemBackground))
+                        .clipShape(Circle())
+                }
+                .buttonStyle(.borderless)
+            }
         }
         .padding(.vertical, 4)
     }

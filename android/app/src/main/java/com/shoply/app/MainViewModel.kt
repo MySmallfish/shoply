@@ -31,6 +31,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _items = MutableStateFlow<List<ShoppingItem>>(emptyList())
     val items: StateFlow<List<ShoppingItem>> = _items
 
+    private val _catalogItems = MutableStateFlow<List<CatalogItem>>(emptyList())
+    val catalogItems: StateFlow<List<CatalogItem>> = _catalogItems
+
     private val _members = MutableStateFlow<List<MemberViewData>>(emptyList())
     val members: StateFlow<List<MemberViewData>> = _members
 
@@ -49,8 +52,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _mergePrompt = MutableStateFlow<MergePrompt?>(null)
     val mergePrompt: StateFlow<MergePrompt?> = _mergePrompt
 
+    private val _undoAction = MutableStateFlow<UndoAction?>(null)
+    val undoAction: StateFlow<UndoAction?> = _undoAction
+
     private var listListener: ListenerRegistration? = null
     private var itemListener: ListenerRegistration? = null
+    private var catalogListener: ListenerRegistration? = null
     private var memberListener: ListenerRegistration? = null
     private var inviteListener: ListenerRegistration? = null
     private var pendingInviteListener: ListenerRegistration? = null
@@ -102,17 +109,120 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         bindItems(listId)
     }
 
-    fun addItem(name: String, barcode: String? = null) {
+    fun addItem(
+        name: String,
+        barcode: String? = null,
+        price: Double? = null,
+        description: String? = null,
+        icon: String? = null
+    ) {
         val listId = _selectedListId.value ?: return
         val userId = _user.value?.uid ?: return
         if (name.trim().isEmpty()) return
-        repo.addItem(listId, name, barcode, userId)
+        val existing = existingItem(name, barcode)
+        if (existing != null) {
+            repo.adjustQuantity(
+                listId,
+                existing.id,
+                1,
+                existing.isBought,
+                barcode,
+                price,
+                description,
+                icon
+            )
+        } else {
+            repo.addItem(listId, name, barcode, price, description, icon, userId)
+        }
+        rememberItem(name, barcode, price, description, icon)
     }
 
     fun toggleBought(item: ShoppingItem) {
         val listId = _selectedListId.value ?: return
         val userId = _user.value?.uid ?: return
+        _undoAction.value = UndoAction(
+            listId = listId,
+            itemId = item.id,
+            wasBought = item.isBought,
+            name = item.name
+        )
         repo.toggleBought(listId, item, userId)
+    }
+
+    fun setBought(item: ShoppingItem, isBought: Boolean) {
+        val listId = _selectedListId.value ?: return
+        val userId = _user.value?.uid ?: return
+        _undoAction.value = UndoAction(
+            listId = listId,
+            itemId = item.id,
+            wasBought = item.isBought,
+            name = item.name
+        )
+        repo.setBought(listId, item.id, isBought, userId)
+    }
+
+    fun incrementQuantity(item: ShoppingItem) {
+        val listId = _selectedListId.value ?: return
+        repo.adjustQuantity(
+            listId,
+            item.id,
+            1,
+            false,
+            null,
+            null,
+            null,
+            null
+        )
+    }
+
+    fun decrementQuantity(item: ShoppingItem) {
+        val listId = _selectedListId.value ?: return
+        repo.adjustQuantity(
+            listId,
+            item.id,
+            -1,
+            false,
+            null,
+            null,
+            null,
+            null
+        )
+    }
+
+    fun adjustQuantity(item: ShoppingItem, delta: Int) {
+        val listId = _selectedListId.value ?: return
+        if (delta == 0) return
+        repo.adjustQuantity(
+            listId,
+            item.id,
+            delta,
+            false,
+            null,
+            null,
+            null,
+            null
+        )
+    }
+
+    fun applyScanPurchase(item: ShoppingItem, amount: Int) {
+        val listId = _selectedListId.value ?: return
+        if (amount >= item.quantity) {
+            setBought(item, true)
+            return
+        }
+        val remaining = (item.quantity - amount).coerceAtLeast(1)
+        repo.updateQuantity(listId, item.id, remaining, false)
+    }
+
+    fun undoLastToggle() {
+        val action = _undoAction.value ?: return
+        val userId = _user.value?.uid ?: return
+        repo.setBought(action.listId, action.itemId, action.wasBought, userId)
+        _undoAction.value = null
+    }
+
+    fun clearUndo() {
+        _undoAction.value = null
     }
 
     fun sendInvite(
@@ -317,17 +427,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _user.value = user
         listListener?.remove()
         itemListener?.remove()
+        catalogListener?.remove()
         memberListener?.remove()
         inviteListener?.remove()
         pendingInviteListener?.remove()
         _lists.value = emptyList()
         _items.value = emptyList()
+        _catalogItems.value = emptyList()
         _members.value = emptyList()
         _invites.value = emptyList()
         _pendingInvites.value = emptyList()
         _selectedListId.value = null
         _currentRole.value = null
         _mergePrompt.value = null
+        _undoAction.value = null
         pendingInviteContext = null
         profileCache.clear()
         rawMembers = emptyList()
@@ -348,6 +461,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             if (lists.isEmpty()) {
                 createDefaultListIfNeeded(user.uid)
             }
+        }
+
+        catalogListener = repo.listenToCatalogItems(user.uid) { items ->
+            _catalogItems.value = items
         }
 
         pendingInviteListener = repo.listenToPendingInvites(user.email?.lowercase()) { invites ->
@@ -402,6 +519,37 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         itemListener = repo.listenToItems(listId) { items ->
             _items.value = items
         }
+    }
+
+    fun catalogItemForBarcode(barcode: String): CatalogItem? {
+        val trimmed = barcode.trim()
+        if (trimmed.isEmpty()) return null
+        return _catalogItems.value.firstOrNull { it.barcode == trimmed }
+    }
+
+    fun matchingCatalogItem(name: String): CatalogItem? {
+        val trimmed = normalizedName(name)
+        if (trimmed.isEmpty()) return null
+        return _catalogItems.value.firstOrNull { it.normalizedName == trimmed }
+    }
+
+    fun suggestionsFor(name: String, limit: Int = 4): List<CatalogItem> {
+        val query = normalizedName(name)
+        if (query.isEmpty()) return emptyList()
+        return _catalogItems.value
+            .filter { it.normalizedName.startsWith(query) || it.normalizedName.contains(query) }
+            .take(limit)
+    }
+
+    private fun existingItem(name: String, barcode: String?): ShoppingItem? {
+        val trimmedBarcode = barcode?.trim().orEmpty()
+        if (trimmedBarcode.isNotEmpty()) {
+            val match = _items.value.firstOrNull { it.barcode == trimmedBarcode }
+            if (match != null) return match
+        }
+        val normalized = normalizedName(name)
+        if (normalized.isEmpty()) return null
+        return _items.value.firstOrNull { it.normalizedName == normalized }
     }
 
     private fun bindMembers(listId: String) {
@@ -499,6 +647,44 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    private fun rememberItem(
+        name: String,
+        barcode: String?,
+        price: Double?,
+        description: String?,
+        icon: String?
+    ) {
+        val userId = _user.value?.uid ?: return
+        val trimmed = name.trim()
+        if (trimmed.isEmpty()) return
+        val normalized = normalizedName(trimmed)
+        val existing = _catalogItems.value.firstOrNull {
+            if (!barcode.isNullOrBlank() && it.barcode == barcode) {
+                return@firstOrNull true
+            }
+            it.normalizedName == normalized
+        }
+
+        val resolvedBarcode = barcode ?: existing?.barcode
+        val resolvedPrice = price ?: existing?.price
+        val resolvedDescription = description ?: existing?.description
+        val resolvedIcon = icon ?: existing?.icon
+
+        repo.upsertCatalogItem(
+            userId = userId,
+            itemId = existing?.id,
+            name = trimmed,
+            barcode = resolvedBarcode,
+            price = resolvedPrice,
+            description = resolvedDescription,
+            icon = resolvedIcon
+        )
+    }
+
+    private fun normalizedName(name: String): String {
+        return name.trim().lowercase()
+    }
+
     private data class PendingInviteContext(
         val listId: String,
         val listTitle: String,
@@ -525,4 +711,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 private data class MemberProfile(
     val name: String,
     val email: String
+)
+
+data class UndoAction(
+    val listId: String,
+    val itemId: String,
+    val wasBought: Boolean,
+    val name: String
 )

@@ -16,12 +16,27 @@ data class ShoppingItem(
     val name: String,
     val normalizedName: String,
     val barcode: String?,
+    val price: Double?,
+    val description: String?,
+    val icon: String?,
     val isBought: Boolean,
     val createdAt: Long,
     val createdBy: String,
     val updatedAt: Long,
     val boughtAt: Long?,
     val boughtBy: String?
+)
+
+data class CatalogItem(
+    val id: String,
+    val name: String,
+    val normalizedName: String,
+    val barcode: String?,
+    val price: Double?,
+    val description: String?,
+    val icon: String?,
+    val createdAt: Long,
+    val updatedAt: Long
 )
 
 data class ListMember(
@@ -93,6 +108,10 @@ fun DocumentSnapshot.toShoppingItem(): ShoppingItem {
     val name = getString("name") ?: ""
     val normalizedName = getString("normalizedName") ?: ""
     val barcode = getString("barcode")
+    val price = getDouble("price")
+    val description = getString("description")
+    val icon = getString("icon")
+    val quantity = getLong("quantity")?.toInt() ?: 1
     val isBought = getBoolean("isBought") ?: false
     val createdAt = getTimestamp("createdAt")?.toDate()?.time ?: 0L
     val updatedAt = getTimestamp("updatedAt")?.toDate()?.time ?: createdAt
@@ -105,12 +124,39 @@ fun DocumentSnapshot.toShoppingItem(): ShoppingItem {
         name = name,
         normalizedName = normalizedName,
         barcode = barcode,
+        price = price,
+        description = description,
+        icon = icon,
+        quantity = quantity,
         isBought = isBought,
         createdAt = createdAt,
         createdBy = createdBy,
         updatedAt = updatedAt,
         boughtAt = boughtAt,
         boughtBy = boughtBy
+    )
+}
+
+fun DocumentSnapshot.toCatalogItem(): CatalogItem {
+    val name = getString("name") ?: ""
+    val normalizedName = getString("normalizedName") ?: ""
+    val barcode = getString("barcode")
+    val price = getDouble("price")
+    val description = getString("description")
+    val icon = getString("icon")
+    val createdAt = getTimestamp("createdAt")?.toDate()?.time ?: 0L
+    val updatedAt = getTimestamp("updatedAt")?.toDate()?.time ?: createdAt
+
+    return CatalogItem(
+        id = id,
+        name = name,
+        normalizedName = normalizedName,
+        barcode = barcode,
+        price = price,
+        description = description,
+        icon = icon,
+        createdAt = createdAt,
+        updatedAt = updatedAt
     )
 }
 

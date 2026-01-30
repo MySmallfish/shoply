@@ -7,6 +7,7 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,6 +19,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardActions
@@ -26,11 +29,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.CameraAlt
-import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.RadioButtonUnchecked
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material.ExperimentalMaterialApi
@@ -46,7 +49,12 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -67,6 +75,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -149,6 +158,7 @@ private fun handleGoogleSignIn(account: GoogleSignInAccount?, viewModel: MainVie
 fun ListScreen(viewModel: MainViewModel) {
     val lists by viewModel.lists.collectAsState(initial = emptyList())
     val items by viewModel.items.collectAsState(initial = emptyList())
+    val catalogItems by viewModel.catalogItems.collectAsState(initial = emptyList())
     val members by viewModel.members.collectAsState(initial = emptyList())
     val invites by viewModel.invites.collectAsState(initial = emptyList())
     val pendingInvites by viewModel.pendingInvites.collectAsState(initial = emptyList())
@@ -156,6 +166,7 @@ fun ListScreen(viewModel: MainViewModel) {
     val mergePrompt by viewModel.mergePrompt.collectAsState(initial = null)
     val currentRole by viewModel.currentRole.collectAsState(initial = null)
     val selectedListId by viewModel.selectedListId.collectAsState(initial = null)
+    val undoAction by viewModel.undoAction.collectAsState(initial = null)
     val context = LocalContext.current
 
     var newItemName by remember { mutableStateOf("") }
@@ -165,12 +176,19 @@ fun ListScreen(viewModel: MainViewModel) {
     var showJoin by remember { mutableStateOf(false) }
     var showMembers by remember { mutableStateOf(false) }
     var showPendingInvites by remember { mutableStateOf(false) }
-    var showScanPrompt by remember { mutableStateOf(false) }
     var showAddFromScan by remember { mutableStateOf(false) }
     var scanCode by remember { mutableStateOf<String?>(null) }
-    var matchedItem by remember { mutableStateOf<ShoppingItem?>(null) }
-    var scannedItemName by remember { mutableStateOf("") }
+    var scannedDraft by remember { mutableStateOf(ItemDetailsDraft()) }
+    var adjustItem by remember { mutableStateOf<ShoppingItem?>(null) }
+    var adjustMode by remember { mutableStateOf(QuantityMode.BOUGHT) }
+    var adjustAmount by remember { mutableStateOf("") }
+    var adjustDefaultAmount by remember { mutableStateOf(1) }
+    var selectedSuggestion by remember { mutableStateOf<CatalogItem?>(null) }
+    var showDetails by remember { mutableStateOf(false) }
+    var detailsDraft by remember { mutableStateOf(ItemDetailsDraft()) }
+    var detailsAllowBarcodeEdit by remember { mutableStateOf(true) }
     var isRefreshing by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
     val refreshScope = rememberCoroutineScope()
     val pullRefreshState = rememberPullRefreshState(
         refreshing = isRefreshing,
@@ -184,13 +202,30 @@ fun ListScreen(viewModel: MainViewModel) {
         }
     )
 
+    fun openAdjustDialog(item: ShoppingItem) {
+        val defaultMode = if (item.quantity <= 0) QuantityMode.NEED else QuantityMode.BOUGHT
+        val defaultAmount = if (defaultMode == QuantityMode.BOUGHT) maxOf(1, item.quantity) else 1
+        adjustItem = item
+        adjustMode = defaultMode
+        adjustDefaultAmount = defaultAmount
+        adjustAmount = defaultAmount.toString()
+    }
+
     LaunchedEffect(scanCode) {
         val code = scanCode ?: return@LaunchedEffect
         val item = items.firstOrNull { it.barcode == code }
         if (item != null) {
-            matchedItem = item
-            showScanPrompt = true
+            openAdjustDialog(item)
+            scanCode = null
         } else {
+            val catalogMatch = viewModel.catalogItemForBarcode(code)
+            scannedDraft = ItemDetailsDraft(
+                name = catalogMatch?.name.orEmpty(),
+                barcode = code,
+                price = catalogMatch?.price?.toString().orEmpty(),
+                description = catalogMatch?.description.orEmpty(),
+                icon = catalogMatch?.icon.orEmpty()
+            )
             showAddFromScan = true
         }
     }
@@ -199,6 +234,20 @@ fun ListScreen(viewModel: MainViewModel) {
         val message = inviteActionError ?: return@LaunchedEffect
         Toast.makeText(context, message, Toast.LENGTH_LONG).show()
         viewModel.clearInviteActionError()
+    }
+
+    LaunchedEffect(undoAction) {
+        val action = undoAction ?: return@LaunchedEffect
+        val result = snackbarHostState.showSnackbar(
+            message = if (action.wasBought) "Marked unbought" else "Marked bought",
+            actionLabel = "Undo",
+            duration = SnackbarDuration.Short
+        )
+        if (result == SnackbarResult.ActionPerformed) {
+            viewModel.undoLastToggle()
+        } else {
+            viewModel.clearUndo()
+        }
     }
 
     Scaffold(
@@ -229,25 +278,66 @@ fun ListScreen(viewModel: MainViewModel) {
                 }
             )
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
             FloatingActionButton(onClick = { showScanner = true }) {
                 Icon(imageVector = Icons.Default.CameraAlt, contentDescription = "Scan")
             }
         },
         bottomBar = {
-            AddItemBar(
-                text = newItemName,
-                onTextChange = { newItemName = it },
-                onAdd = {
-                    viewModel.addItem(newItemName)
-                    newItemName = ""
+            val suggestions = remember(newItemName, catalogItems) {
+                viewModel.suggestionsFor(newItemName)
+            }
+            Column {
+                if (suggestions.isNotEmpty()) {
+                    SuggestionList(
+                        suggestions = suggestions,
+                        onSelect = { item ->
+                            newItemName = item.name
+                            selectedSuggestion = item
+                        }
+                    )
                 }
-            )
+                AddItemBar(
+                    text = newItemName,
+                    onTextChange = { value ->
+                        newItemName = value
+                        if (selectedSuggestion != null && viewModel.matchingCatalogItem(value)?.id != selectedSuggestion?.id) {
+                            selectedSuggestion = null
+                        }
+                    },
+                    onAdd = {
+                        val trimmed = newItemName.trim()
+                        if (trimmed.isNotEmpty()) {
+                            val match = selectedSuggestion ?: viewModel.matchingCatalogItem(trimmed)
+                            viewModel.addItem(
+                                trimmed,
+                                match?.barcode,
+                                match?.price,
+                                match?.description,
+                                match?.icon
+                            )
+                            newItemName = ""
+                            selectedSuggestion = null
+                        }
+                    },
+                    onDetails = {
+                        val trimmed = newItemName.trim()
+                        val match = selectedSuggestion ?: viewModel.matchingCatalogItem(trimmed)
+                        detailsDraft = ItemDetailsDraft(
+                            name = if (trimmed.isNotEmpty()) trimmed else match?.name.orEmpty(),
+                            barcode = match?.barcode.orEmpty(),
+                            price = match?.price?.toString().orEmpty(),
+                            description = match?.description.orEmpty(),
+                            icon = match?.icon.orEmpty()
+                        )
+                        detailsAllowBarcodeEdit = match?.barcode.isNullOrBlank()
+                        showDetails = true
+                    }
+                )
+            }
         }
     ) { padding ->
-        val activeItems = items.filter { !it.isBought }
-        val boughtItems = items.filter { it.isBought }
-
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -259,7 +349,7 @@ fun ListScreen(viewModel: MainViewModel) {
                     .fillMaxSize()
                     .padding(horizontal = 16.dp)
             ) {
-                if (activeItems.isEmpty() && boughtItems.isEmpty()) {
+                if (items.isEmpty()) {
                     item {
                         Box(
                             modifier = Modifier
@@ -274,18 +364,13 @@ fun ListScreen(viewModel: MainViewModel) {
                         }
                     }
                 } else {
-                    if (activeItems.isNotEmpty()) {
-                        item { SectionHeader("Active") }
-                        items(activeItems) { item ->
-                            ItemRow(item = item, onToggle = { viewModel.toggleBought(item) })
-                        }
-                    }
-
-                    if (boughtItems.isNotEmpty()) {
-                        item { SectionHeader("Bought") }
-                        items(boughtItems) { item ->
-                            ItemRow(item = item, onToggle = { viewModel.toggleBought(item) })
-                        }
+                    items(items) { item ->
+                        ItemRow(
+                            item = item,
+                            onTap = { openAdjustDialog(item) },
+                            onIncrement = { viewModel.incrementQuantity(item) },
+                            onDecrement = { viewModel.decrementQuantity(item) }
+                        )
                     }
                 }
             }
@@ -396,30 +481,21 @@ fun ListScreen(viewModel: MainViewModel) {
         )
     }
 
-    if (showScanPrompt && matchedItem != null) {
-        AlertDialog(
-            onDismissRequest = {
-                showScanPrompt = false
-                scanCode = null
-            },
-            title = { Text("Mark as bought?") },
-            text = { Text("Mark \"${matchedItem?.name}\" as bought?") },
-            confirmButton = {
-                Button(onClick = {
-                    matchedItem?.let { viewModel.toggleBought(it) }
-                    showScanPrompt = false
-                    scanCode = null
-                }) {
-                    Text("Mark")
+    adjustItem?.let { item ->
+        AdjustQuantityDialog(
+            item = item,
+            mode = adjustMode,
+            amount = adjustAmount,
+            onModeChange = { adjustMode = it },
+            onAmountChange = { adjustAmount = it },
+            onDismiss = { adjustItem = null },
+            onApply = {
+                val amount = adjustAmount.trim().toIntOrNull() ?: adjustDefaultAmount
+                if (amount > 0) {
+                    val delta = if (adjustMode == QuantityMode.BOUGHT) -amount else amount
+                    viewModel.adjustQuantity(item, delta)
                 }
-            },
-            dismissButton = {
-                TextButton(onClick = {
-                    showScanPrompt = false
-                    scanCode = null
-                }) {
-                    Text("Cancel")
-                }
+                adjustItem = null
             }
         )
     }
@@ -427,58 +503,101 @@ fun ListScreen(viewModel: MainViewModel) {
     if (showAddFromScan) {
         AddScannedItemDialog(
             barcode = scanCode ?: "",
-            name = scannedItemName,
-            onNameChange = { scannedItemName = it },
+            draft = scannedDraft,
+            onDraftChange = { scannedDraft = it },
             onDismiss = {
                 showAddFromScan = false
                 scanCode = null
             },
             onAdd = {
-                viewModel.addItem(scannedItemName, scanCode)
-                scannedItemName = ""
+                viewModel.addItem(
+                    scannedDraft.name,
+                    scannedDraft.barcode.ifBlank { null },
+                    scannedDraft.priceValue(),
+                    scannedDraft.description,
+                    scannedDraft.icon
+                )
+                scannedDraft = ItemDetailsDraft()
                 showAddFromScan = false
                 scanCode = null
+            }
+        )
+    }
+
+    if (showDetails) {
+        ItemDetailsDialog(
+            draft = detailsDraft,
+            onDraftChange = { detailsDraft = it },
+            onDismiss = { showDetails = false },
+            allowBarcodeEdit = detailsAllowBarcodeEdit,
+            onSave = {
+                viewModel.addItem(
+                    detailsDraft.name,
+                    detailsDraft.barcode.ifBlank { null },
+                    detailsDraft.priceValue(),
+                    detailsDraft.description,
+                    detailsDraft.icon
+                )
+                newItemName = ""
+                selectedSuggestion = null
+                showDetails = false
+                detailsDraft = ItemDetailsDraft()
             }
         )
     }
 }
 
 @Composable
-private fun SectionHeader(title: String) {
-    Text(
-        text = title,
-        modifier = Modifier.padding(top = 16.dp, bottom = 8.dp),
-        fontWeight = FontWeight.SemiBold,
-        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
-    )
-}
-
-@Composable
-private fun ItemRow(item: ShoppingItem, onToggle: () -> Unit) {
+private fun ItemRow(
+    item: ShoppingItem,
+    onTap: () -> Unit,
+    onIncrement: () -> Unit,
+    onDecrement: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        IconButton(onClick = onToggle) {
-            Icon(
-                imageVector = if (item.isBought) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
-                contentDescription = null,
-                tint = if (item.isBought) MaterialTheme.colorScheme.secondary else Color.Gray
+        Row(
+            modifier = Modifier
+                .weight(1f)
+                .clickable { onTap() },
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (!item.icon.isNullOrBlank()) {
+                Text(
+                    text = item.icon,
+                    modifier = Modifier.padding(end = 6.dp)
+                )
+            }
+            Text(
+                text = item.name,
+                color = MaterialTheme.colorScheme.onBackground
             )
         }
+        IconButton(onClick = onDecrement) {
+            Icon(imageVector = Icons.Default.Remove, contentDescription = "Decrease")
+        }
         Text(
-            text = item.name,
-            modifier = Modifier.weight(1f),
-            color = if (item.isBought) MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
-                else MaterialTheme.colorScheme.onBackground
+            text = item.quantity.toString(),
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.widthIn(min = 20.dp)
         )
+        IconButton(onClick = onIncrement) {
+            Icon(imageVector = Icons.Default.Add, contentDescription = "Increase")
+        }
     }
 }
 
 @Composable
-private fun AddItemBar(text: String, onTextChange: (String) -> Unit, onAdd: () -> Unit) {
+private fun AddItemBar(
+    text: String,
+    onTextChange: (String) -> Unit,
+    onAdd: () -> Unit,
+    onDetails: () -> Unit
+) {
     val keyboardController = LocalSoftwareKeyboardController.current
     val canAdd = text.trim().isNotEmpty()
     Row(
@@ -505,6 +624,10 @@ private fun AddItemBar(text: String, onTextChange: (String) -> Unit, onAdd: () -
             )
         )
         Spacer(modifier = Modifier.size(12.dp))
+        IconButton(onClick = onDetails, enabled = canAdd) {
+            Icon(imageVector = Icons.Default.Edit, contentDescription = "Details")
+        }
+        Spacer(modifier = Modifier.size(6.dp))
         Button(
             onClick = onAdd,
             enabled = canAdd,
@@ -944,12 +1067,167 @@ private fun extractToken(input: String): String? {
     }
 }
 
+private data class ItemDetailsDraft(
+    val name: String = "",
+    val barcode: String = "",
+    val price: String = "",
+    val description: String = "",
+    val icon: String = ""
+) {
+    fun priceValue(): Double? {
+        val trimmed = price.trim()
+        if (trimmed.isEmpty()) return null
+        return trimmed.replace(",", ".").toDoubleOrNull()
+    }
+}
+
+@Composable
+private fun SuggestionList(
+    suggestions: List<CatalogItem>,
+    onSelect: (CatalogItem) -> Unit
+) {
+    Surface(shadowElevation = 2.dp) {
+        Column(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+            suggestions.forEach { item ->
+                TextButton(onClick = { onSelect(item) }, modifier = Modifier.fillMaxWidth()) {
+                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        if (!item.icon.isNullOrBlank()) {
+                            Text(text = item.icon)
+                            Spacer(modifier = Modifier.width(8.dp))
+                        }
+                        Text(text = item.name, modifier = Modifier.weight(1f))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ItemDetailsDialog(
+    draft: ItemDetailsDraft,
+    onDraftChange: (ItemDetailsDraft) -> Unit,
+    onDismiss: () -> Unit,
+    allowBarcodeEdit: Boolean,
+    onSave: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Item Details") },
+        text = {
+            Column {
+                TextField(
+                    value = draft.name,
+                    onValueChange = { onDraftChange(draft.copy(name = it)) },
+                    placeholder = { Text("Name") }
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                TextField(
+                    value = draft.barcode,
+                    onValueChange = { onDraftChange(draft.copy(barcode = it)) },
+                    placeholder = { Text("Barcode") },
+                    enabled = allowBarcodeEdit
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                TextField(
+                    value = draft.price,
+                    onValueChange = { onDraftChange(draft.copy(price = it)) },
+                    placeholder = { Text("Price") }
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                TextField(
+                    value = draft.icon,
+                    onValueChange = { onDraftChange(draft.copy(icon = it)) },
+                    placeholder = { Text("Icon") }
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                TextField(
+                    value = draft.description,
+                    onValueChange = { onDraftChange(draft.copy(description = it)) },
+                    placeholder = { Text("Description") }
+                )
+            }
+        },
+        confirmButton = {
+            Button(onClick = onSave, enabled = draft.name.trim().isNotEmpty()) {
+                Text("Save")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+@Composable
+private fun AdjustQuantityDialog(
+    item: ShoppingItem,
+    mode: QuantityMode,
+    amount: String,
+    onModeChange: (QuantityMode) -> Unit,
+    onAmountChange: (String) -> Unit,
+    onDismiss: () -> Unit,
+    onApply: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("How much did you buy?") },
+        text = {
+            Column {
+                Text("Left to buy: ${item.quantity}", color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f))
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (mode == QuantityMode.BOUGHT) {
+                        Button(onClick = { onModeChange(QuantityMode.BOUGHT) }) {
+                            Text("Bought")
+                        }
+                        OutlinedButton(onClick = { onModeChange(QuantityMode.NEED) }) {
+                            Text("Need")
+                        }
+                    } else {
+                        OutlinedButton(onClick = { onModeChange(QuantityMode.BOUGHT) }) {
+                            Text("Bought")
+                        }
+                        Button(onClick = { onModeChange(QuantityMode.NEED) }) {
+                            Text("Need")
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+                TextField(
+                    value = amount,
+                    onValueChange = onAmountChange,
+                    placeholder = { Text("Amount") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done)
+                )
+            }
+        },
+        confirmButton = {
+            Button(onClick = onApply) {
+                Text("Apply")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+private enum class QuantityMode {
+    BOUGHT,
+    NEED
+}
+
 
 @Composable
 private fun AddScannedItemDialog(
     barcode: String,
-    name: String,
-    onNameChange: (String) -> Unit,
+    draft: ItemDetailsDraft,
+    onDraftChange: (ItemDetailsDraft) -> Unit,
     onDismiss: () -> Unit,
     onAdd: () -> Unit
 ) {
@@ -961,14 +1239,32 @@ private fun AddScannedItemDialog(
                 Text("Scanned: $barcode", fontWeight = FontWeight.SemiBold)
                 Spacer(modifier = Modifier.height(8.dp))
                 TextField(
-                    value = name,
-                    onValueChange = onNameChange,
+                    value = draft.name,
+                    onValueChange = { onDraftChange(draft.copy(name = it)) },
                     placeholder = { Text("Name") }
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                TextField(
+                    value = draft.price,
+                    onValueChange = { onDraftChange(draft.copy(price = it)) },
+                    placeholder = { Text("Price") }
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                TextField(
+                    value = draft.icon,
+                    onValueChange = { onDraftChange(draft.copy(icon = it)) },
+                    placeholder = { Text("Icon") }
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                TextField(
+                    value = draft.description,
+                    onValueChange = { onDraftChange(draft.copy(description = it)) },
+                    placeholder = { Text("Description") }
                 )
             }
         },
         confirmButton = {
-            Button(onClick = onAdd, enabled = name.trim().isNotEmpty()) {
+            Button(onClick = onAdd, enabled = draft.name.trim().isNotEmpty()) {
                 Text("Add")
             }
         },
