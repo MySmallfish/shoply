@@ -11,8 +11,7 @@ struct ItemRow: View {
             Button(action: onTap) {
                 HStack(spacing: 8) {
                     if let icon = item.icon, !icon.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                        Text(icon)
-                            .font(.system(size: 18))
+                        ItemIconView(icon: icon, size: 20)
                     }
 
                     Text(item.name)

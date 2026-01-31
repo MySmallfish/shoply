@@ -67,6 +67,9 @@
     <string name="barcode">ברקוד</string>
     <string name="price">מחיר</string>
     <string name="icon">אייקון</string>
+    <string name="camera">מצלמה</string>
+    <string name="library">גלריה</string>
+    <string name="remove_icon">הסר אייקון</string>
     <string name="description">תיאור</string>
     <string name="save">שמור</string>
 

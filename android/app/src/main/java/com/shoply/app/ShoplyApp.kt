@@ -1,13 +1,19 @@
 package com.shoply.app
 
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
+import android.util.Base64
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,12 +31,15 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Group
@@ -72,13 +81,20 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -86,6 +102,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
+import java.io.ByteArrayOutputStream
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -214,6 +231,8 @@ fun ListScreen(viewModel: MainViewModel) {
 
     LaunchedEffect(scanCode) {
         val code = scanCode ?: return@LaunchedEffect
+        newItemName = code
+        selectedSuggestion = null
         val item = items.firstOrNull { it.barcode == code }
         if (item != null) {
             openAdjustDialog(item)
@@ -577,9 +596,10 @@ private fun ItemRow(
                 .clickable { onTap() },
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (!item.icon.isNullOrBlank()) {
-                Text(
-                    text = item.icon,
+            item.icon?.takeIf { it.isNotBlank() }?.let { icon ->
+                ItemIconView(
+                    icon = icon,
+                    size = 20.dp,
                     modifier = Modifier.padding(end = 6.dp)
                 )
             }
@@ -611,6 +631,8 @@ private fun AddItemBar(
 ) {
     val keyboardController = LocalSoftwareKeyboardController.current
     val canAdd = text.trim().isNotEmpty()
+    val textAlign = inputTextAlign()
+    val textStyle = LocalTextStyle.current.copy(textAlign = textAlign)
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -622,7 +644,8 @@ private fun AddItemBar(
             value = text,
             onValueChange = onTextChange,
             modifier = Modifier.weight(1f),
-            placeholder = { Text(stringResource(R.string.add_item_placeholder)) },
+            placeholder = { PlaceholderText(stringResource(R.string.add_item_placeholder), textAlign) },
+            textStyle = textStyle,
             singleLine = true,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(
@@ -703,6 +726,8 @@ private fun InviteDialog(onDismiss: () -> Unit, onSend: (String, String) -> Unit
     var email by remember { mutableStateOf("") }
     var role by remember { mutableStateOf("editor") }
     var roleExpanded by remember { mutableStateOf(false) }
+    val textAlign = inputTextAlign()
+    val textStyle = LocalTextStyle.current.copy(textAlign = textAlign)
     val roleLabel = when (role) {
         "owner" -> stringResource(R.string.role_owner)
         "viewer" -> stringResource(R.string.role_viewer)
@@ -717,7 +742,8 @@ private fun InviteDialog(onDismiss: () -> Unit, onSend: (String, String) -> Unit
                 TextField(
                     value = email,
                     onValueChange = { email = it },
-                    placeholder = { Text(stringResource(R.string.email)) }
+                    placeholder = { PlaceholderText(stringResource(R.string.email), textAlign) },
+                    textStyle = textStyle
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 Box {
@@ -756,6 +782,8 @@ private fun InviteDialog(onDismiss: () -> Unit, onSend: (String, String) -> Unit
 @Composable
 private fun CreateListDialog(onDismiss: () -> Unit, onCreate: (String) -> Unit) {
     var title by remember { mutableStateOf("") }
+    val textAlign = inputTextAlign()
+    val textStyle = LocalTextStyle.current.copy(textAlign = textAlign)
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -764,7 +792,8 @@ private fun CreateListDialog(onDismiss: () -> Unit, onCreate: (String) -> Unit) 
             TextField(
                 value = title,
                 onValueChange = { title = it },
-                placeholder = { Text(stringResource(R.string.list_name_placeholder)) }
+                placeholder = { PlaceholderText(stringResource(R.string.list_name_placeholder), textAlign) },
+                textStyle = textStyle
             )
         },
         confirmButton = {
@@ -1062,6 +1091,8 @@ private fun statusLabel(status: String): String {
 private fun JoinListDialog(onDismiss: () -> Unit, onJoin: (String) -> Unit) {
     var input by remember { mutableStateOf("") }
     val token = extractToken(input)
+    val textAlign = inputTextAlign()
+    val textStyle = LocalTextStyle.current.copy(textAlign = textAlign)
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -1070,7 +1101,8 @@ private fun JoinListDialog(onDismiss: () -> Unit, onJoin: (String) -> Unit) {
             TextField(
                 value = input,
                 onValueChange = { input = it },
-                placeholder = { Text(stringResource(R.string.paste_invite_link)) }
+                placeholder = { PlaceholderText(stringResource(R.string.paste_invite_link), textAlign) },
+                textStyle = textStyle
             )
         },
         confirmButton = {
@@ -1132,8 +1164,8 @@ private fun SuggestionList(
             suggestions.forEach { item ->
                 TextButton(onClick = { onSelect(item) }, modifier = Modifier.fillMaxWidth()) {
                     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        if (!item.icon.isNullOrBlank()) {
-                            Text(text = item.icon)
+                        item.icon?.takeIf { it.isNotBlank() }?.let { icon ->
+                            ItemIconView(icon = icon, size = 18.dp)
                             Spacer(modifier = Modifier.width(8.dp))
                         }
                         Text(text = item.name, modifier = Modifier.weight(1f))
@@ -1152,6 +1184,8 @@ private fun ItemDetailsDialog(
     allowBarcodeEdit: Boolean,
     onSave: () -> Unit
 ) {
+    val textAlign = inputTextAlign()
+    val textStyle = LocalTextStyle.current.copy(textAlign = textAlign)
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.item_details)) },
@@ -1160,32 +1194,42 @@ private fun ItemDetailsDialog(
                 TextField(
                     value = draft.name,
                     onValueChange = { onDraftChange(draft.copy(name = it)) },
-                    placeholder = { Text(stringResource(R.string.name)) }
+                    placeholder = { PlaceholderText(stringResource(R.string.name), textAlign) },
+                    textStyle = textStyle
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 TextField(
                     value = draft.barcode,
                     onValueChange = { onDraftChange(draft.copy(barcode = it)) },
-                    placeholder = { Text(stringResource(R.string.barcode)) },
+                    placeholder = { PlaceholderText(stringResource(R.string.barcode), textAlign) },
+                    textStyle = textStyle,
                     enabled = allowBarcodeEdit
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 TextField(
                     value = draft.price,
                     onValueChange = { onDraftChange(draft.copy(price = it)) },
-                    placeholder = { Text(stringResource(R.string.price)) }
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                TextField(
-                    value = draft.icon,
-                    onValueChange = { onDraftChange(draft.copy(icon = it)) },
-                    placeholder = { Text(stringResource(R.string.icon)) }
+                    placeholder = { PlaceholderText(stringResource(R.string.price), textAlign) },
+                    textStyle = textStyle
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 TextField(
                     value = draft.description,
                     onValueChange = { onDraftChange(draft.copy(description = it)) },
-                    placeholder = { Text(stringResource(R.string.description)) }
+                    placeholder = { PlaceholderText(stringResource(R.string.description), textAlign) },
+                    textStyle = textStyle
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = stringResource(R.string.icon),
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = textAlign,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                IconPicker(
+                    icon = draft.icon,
+                    onIconChange = { onDraftChange(draft.copy(icon = it)) }
                 )
             }
         },
@@ -1296,6 +1340,8 @@ private fun AddScannedItemDialog(
     onDismiss: () -> Unit,
     onAdd: () -> Unit
 ) {
+    val textAlign = inputTextAlign()
+    val textStyle = LocalTextStyle.current.copy(textAlign = textAlign)
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.add_item_title)) },
@@ -1309,25 +1355,34 @@ private fun AddScannedItemDialog(
                 TextField(
                     value = draft.name,
                     onValueChange = { onDraftChange(draft.copy(name = it)) },
-                    placeholder = { Text(stringResource(R.string.name)) }
+                    placeholder = { PlaceholderText(stringResource(R.string.name), textAlign) },
+                    textStyle = textStyle
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 TextField(
                     value = draft.price,
                     onValueChange = { onDraftChange(draft.copy(price = it)) },
-                    placeholder = { Text(stringResource(R.string.price)) }
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                TextField(
-                    value = draft.icon,
-                    onValueChange = { onDraftChange(draft.copy(icon = it)) },
-                    placeholder = { Text(stringResource(R.string.icon)) }
+                    placeholder = { PlaceholderText(stringResource(R.string.price), textAlign) },
+                    textStyle = textStyle
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 TextField(
                     value = draft.description,
                     onValueChange = { onDraftChange(draft.copy(description = it)) },
-                    placeholder = { Text(stringResource(R.string.description)) }
+                    placeholder = { PlaceholderText(stringResource(R.string.description), textAlign) },
+                    textStyle = textStyle
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = stringResource(R.string.icon),
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = textAlign,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                IconPicker(
+                    icon = draft.icon,
+                    onIconChange = { onDraftChange(draft.copy(icon = it)) }
                 )
             }
         },
@@ -1342,4 +1397,155 @@ private fun AddScannedItemDialog(
             }
         }
     )
+}
+
+@Composable
+private fun IconPicker(
+    icon: String,
+    onIconChange: (String) -> Unit
+) {
+    val context = LocalContext.current
+    val stockIcons = listOf("🧺", "🥛", "🍞", "🧀", "🍎", "🧴")
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicturePreview()
+    ) { bitmap ->
+        bitmap?.let { encodeIconBitmap(it) }?.let(onIconChange)
+    }
+
+    val libraryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri?.let { loadBitmap(context, it) }?.let { encodeIconBitmap(it) }?.let(onIconChange)
+    }
+
+    Column {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            stockIcons.forEach { stock ->
+                TextButton(onClick = { onIconChange(stock) }) {
+                    Text(text = stock, fontSize = 20.sp)
+                }
+            }
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            OutlinedButton(onClick = { cameraLauncher.launch(null) }) {
+                Icon(imageVector = Icons.Default.CameraAlt, contentDescription = null)
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(stringResource(R.string.camera))
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            OutlinedButton(onClick = { libraryLauncher.launch("image/*") }) {
+                Icon(imageVector = Icons.Default.PhotoLibrary, contentDescription = null)
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(stringResource(R.string.library))
+            }
+            Spacer(modifier = Modifier.weight(1f))
+            if (icon.isNotBlank()) {
+                TextButton(onClick = { onIconChange("") }) {
+                    Text(stringResource(R.string.remove_icon))
+                }
+            }
+        }
+
+        if (icon.isNotBlank()) {
+            ItemIconView(
+                icon = icon,
+                size = 48.dp,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun ItemIconView(
+    icon: String,
+    size: Dp,
+    modifier: Modifier = Modifier
+) {
+    if (icon.isBlank()) return
+    val image = remember(icon) { decodeIconImage(icon) }
+    Box(
+        modifier = modifier.size(size),
+        contentAlignment = Alignment.Center
+    ) {
+        if (image != null) {
+            Image(
+                bitmap = image,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(6.dp))
+            )
+        } else {
+            Text(text = icon, fontSize = (size.value * 0.9f).sp)
+        }
+    }
+}
+
+@Composable
+private fun inputTextAlign(): TextAlign {
+    return if (LocalLayoutDirection.current == LayoutDirection.Rtl) {
+        TextAlign.End
+    } else {
+        TextAlign.Start
+    }
+}
+
+@Composable
+private fun PlaceholderText(text: String, textAlign: TextAlign) {
+    Text(text = text, modifier = Modifier.fillMaxWidth(), textAlign = textAlign)
+}
+
+private fun decodeIconImage(icon: String): ImageBitmap? {
+    if (!icon.startsWith("img:")) return null
+    val payload = icon.removePrefix("img:")
+    return try {
+        val bytes = Base64.decode(payload, Base64.DEFAULT)
+        BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()
+    } catch (_: IllegalArgumentException) {
+        null
+    }
+}
+
+private fun encodeIconBitmap(bitmap: Bitmap): String? {
+    val resized = resizeBitmap(bitmap, 256)
+    val output = ByteArrayOutputStream()
+    if (!resized.compress(Bitmap.CompressFormat.JPEG, 80, output)) {
+        return null
+    }
+    val base64 = Base64.encodeToString(output.toByteArray(), Base64.NO_WRAP)
+    return "img:$base64"
+}
+
+private fun resizeBitmap(bitmap: Bitmap, maxDimension: Int): Bitmap {
+    val width = bitmap.width
+    val height = bitmap.height
+    val maxSide = maxOf(width, height)
+    if (maxSide <= maxDimension) return bitmap
+    val scale = maxDimension.toFloat() / maxSide.toFloat()
+    val newWidth = (width * scale).toInt().coerceAtLeast(1)
+    val newHeight = (height * scale).toInt().coerceAtLeast(1)
+    return Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true)
+}
+
+private fun loadBitmap(context: Context, uri: Uri): Bitmap? {
+    return try {
+        context.contentResolver.openInputStream(uri)?.use { stream ->
+            BitmapFactory.decodeStream(stream)
+        }
+    } catch (_: Exception) {
+        null
+    }
 }

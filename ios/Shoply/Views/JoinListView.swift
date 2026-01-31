@@ -3,6 +3,7 @@ import SwiftUI
 struct JoinListView: View {
     @EnvironmentObject private var session: SessionViewModel
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.layoutDirection) private var layoutDirection
 
     @State private var input = ""
 
@@ -12,6 +13,7 @@ struct JoinListView: View {
                 Section("Invite link or token") {
                     TextField("Paste invite link", text: $input)
                         .textInputAutocapitalization(.never)
+                        .multilineTextAlignment(layoutDirection == .rightToLeft ? .trailing : .leading)
                 }
             }
             .navigationTitle("Join List")

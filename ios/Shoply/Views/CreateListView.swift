@@ -3,6 +3,7 @@ import SwiftUI
 struct CreateListView: View {
     @EnvironmentObject private var session: SessionViewModel
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.layoutDirection) private var layoutDirection
 
     @State private var title = ""
 
@@ -11,6 +12,7 @@ struct CreateListView: View {
             Form {
                 Section("List name") {
                     TextField("e.g. Grocery", text: $title)
+                        .multilineTextAlignment(layoutDirection == .rightToLeft ? .trailing : .leading)
                 }
             }
             .navigationTitle("New List")

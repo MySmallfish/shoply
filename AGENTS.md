@@ -25,6 +25,9 @@ This file captures current project state, key decisions, build steps, and known 
 - The adjust sheet uses a medium detent for one-hand use.
 - Localization added (Hebrew default + English). RTL enabled.
 - Barcode scan of an existing item opens the adjust dialog; otherwise prompt to add item details.
+- Scanning now pre-fills the add-item text with the barcode.
+- Item icons support emoji or photo picks (camera/library + stock icons); stored as `img:` base64 and rendered in list rows and suggestions.
+- Android text field placeholders now align to RTL/LTR based on layout direction.
 - iOS Google Sign-In URL scheme restored in Info.plist.
 - Invites now write directly to Firestore only (no email or push); on success the app opens the system share sheet with an invite link.
 - Invite docs include `emailLower`, `allowedEmails`, `creatorName`, and `creatorEmail` for compatibility.
@@ -44,6 +47,8 @@ This file captures current project state, key decisions, build steps, and known 
   - Header, list, empty state, `refreshable` + overlay empty state.
 - `ios/Shoply/Views/AddItemBar.swift`
   - Add bar UI; Return/Done triggers add.
+- `ios/Shoply/Views/ItemIconView.swift`
+  - Renders emoji or base64 `img:` icons.
 - `ios/Shoply/ViewModels/ListViewModel.swift`
   - `refresh()` rebinds listener without clearing items.
 - `ios/Shoply/Views/ScannerView.swift`
@@ -57,7 +62,7 @@ This file captures current project state, key decisions, build steps, and known 
 
 ### Android
 - `android/app/src/main/java/com/shoply/app/ShoplyApp.kt`
-  - Compose screens, pull-to-refresh, Add item bar (IME Done triggers add), and invite link sharing.
+  - Compose screens, pull-to-refresh, Add item bar (IME Done triggers add), invite link sharing, RTL-aligned inputs, and icon picker rendering.
 - `android/app/src/main/java/com/shoply/app/MainViewModel.kt`
   - `refreshSelectedList()` rebinds item listener, invite accept flow handles merge prompt on name conflicts.
 - `android/app/build.gradle`

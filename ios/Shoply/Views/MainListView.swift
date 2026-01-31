@@ -277,6 +277,8 @@ struct MainListView: View {
 
     private func handleScan(code: String?) {
         guard let code = code else { return }
+        newItemName = code
+        selectedSuggestion = nil
         if let item = listViewModel.itemForBarcode(code) {
             adjustItem = item
         } else {
@@ -343,8 +345,7 @@ struct MainListView: View {
                 } label: {
                     HStack(spacing: 10) {
                         if let icon = suggestion.icon, !icon.isEmpty {
-                            Text(icon)
-                                .font(.system(size: 16))
+                            ItemIconView(icon: icon, size: 16)
                         }
                         Text(suggestion.name)
                             .foregroundColor(.primary)

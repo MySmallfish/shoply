@@ -3,6 +3,7 @@ import SwiftUI
 struct InviteView: View {
     @EnvironmentObject private var session: SessionViewModel
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.layoutDirection) private var layoutDirection
 
     @State private var email = ""
     @State private var role = "editor"
@@ -18,6 +19,7 @@ struct InviteView: View {
                     TextField("Email", text: $email)
                         .keyboardType(.emailAddress)
                         .textInputAutocapitalization(.never)
+                        .multilineTextAlignment(layoutDirection == .rightToLeft ? .trailing : .leading)
 
                     Picker("Role", selection: $role) {
                         Text("Editor").tag("editor")
