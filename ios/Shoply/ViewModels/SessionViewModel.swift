@@ -80,7 +80,8 @@ final class SessionViewModel: ObservableObject {
         }
         let creatorName = user?.displayName ?? ""
         let creatorEmail = user?.email ?? ""
-        let listTitle = lists.first(where: { $0.id == listId })?.title ?? "Shoply list"
+        let listTitle = lists.first(where: { $0.id == listId })?.title
+            ?? NSLocalizedString("Shoply list", comment: "")
         let trimmed = email.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmed.isEmpty {
             completion?(.failure(InviteError.invalidEmail))
@@ -181,11 +182,15 @@ final class SessionViewModel: ObservableObject {
 
     private func createDefaultListIfNeeded() {
         guard !isCreatingDefault, let userId = user?.uid else { return }
-        if lists.contains(where: { $0.title.caseInsensitiveCompare("Grocery") == .orderedSame }) {
+        let defaultTitle = NSLocalizedString("default_list_title", comment: "")
+        let fallbackTitles = [defaultTitle, "Grocery", "מצרכים"]
+        if lists.contains(where: { list in
+            fallbackTitles.contains(where: { list.title.caseInsensitiveCompare($0) == .orderedSame })
+        }) {
             return
         }
         isCreatingDefault = true
-        repository.createList(title: "Grocery", ownerId: userId) { [weak self] result in
+        repository.createList(title: defaultTitle, ownerId: userId) { [weak self] result in
             Task { @MainActor in
                 if case let .success(listId) = result {
                     self?.selectList(listId)
@@ -253,7 +258,7 @@ final class SessionViewModel: ObservableObject {
 
     func keepInviteSeparate(_ prompt: MergePrompt) {
         mergeActionError = nil
-        let suffix = prompt.creatorName.isEmpty ? "Shared" : prompt.creatorName
+        let suffix = prompt.creatorName.isEmpty ? NSLocalizedString("Shared", comment: "") : prompt.creatorName
         let title = "\(prompt.invitedListTitle) - \(suffix)"
         repository.updateListTitle(listId: prompt.invitedListId, title: title) { [weak self] error in
             Task { @MainActor in
@@ -310,9 +315,9 @@ enum InviteError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .noListSelected:
-            return "Select a list before sending an invite."
+            return NSLocalizedString("Select a list before sending an invite.", comment: "")
         case .invalidEmail:
-            return "Please enter a valid email address."
+            return NSLocalizedString("Please enter a valid email address.", comment: "")
         }
     }
 }
@@ -326,7 +331,7 @@ private struct PendingInviteContext {
     var creatorDisplayName: String {
         if !creatorName.isEmpty { return creatorName }
         if !creatorEmail.isEmpty { return creatorEmail }
-        return "Shared"
+        return NSLocalizedString("Shared", comment: "")
     }
 
     init(from invite: PendingInvite) {

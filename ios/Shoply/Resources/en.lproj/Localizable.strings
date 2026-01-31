@@ -1,0 +1,94 @@
+"Shoply" = "Shoply";
+"Shared lists that update in real time" = "Shared lists that update in real time";
+"Continue with Google" = "Continue with Google";
+
+"Invite" = "Invite";
+"Email" = "Email";
+"Role" = "Role";
+"Editor" = "Editor";
+"Viewer" = "Viewer";
+"Send" = "Send";
+"Cancel" = "Cancel";
+"Invite failed" = "Invite failed";
+"Unable to send invite." = "Unable to send invite.";
+
+"Pending Invitations" = "Pending Invitations";
+"pending_invitations_count_format" = "Pending Invitations (%d)";
+"No pending invitations" = "No pending invitations";
+"No pending invites" = "No pending invites";
+"Invitation" = "Invitation";
+"OK" = "OK";
+"Done" = "Done";
+"Accept" = "Accept";
+
+"Add Item" = "Add Item";
+"Add" = "Add";
+"Update Item" = "Update Item";
+"Apply" = "Apply";
+"How much?" = "How much?";
+"left_to_buy_format" = "Left to buy: %d";
+
+"Item Details" = "Item Details";
+"Save" = "Save";
+
+"Join List" = "Join List";
+"Join" = "Join";
+"Paste invite link" = "Paste invite link";
+"Invite link or token" = "Invite link or token";
+
+"List name" = "List name";
+"New List" = "New List";
+"Create" = "Create";
+"Create List" = "Create List";
+"e.g. Grocery" = "e.g. Grocery";
+
+"Add item" = "Add item";
+"Name" = "Name";
+"Barcode" = "Barcode";
+"Price" = "Price";
+"Icon" = "Icon";
+"Description" = "Description";
+
+"Lists" = "Lists";
+"Join with Link" = "Join with Link";
+
+"Merge lists?" = "Merge lists?";
+"Merge" = "Merge";
+"Keep Separate" = "Keep Separate";
+"merge_prompt_message" = "You already have a list named \"%@\". Merge it into \"%@\"?";
+"Merge failed" = "Merge failed";
+"Unable to merge lists." = "Unable to merge lists.";
+
+"Sign Out" = "Sign Out";
+"No list selected" = "No list selected";
+"Create a list to start sharing" = "Create a list to start sharing";
+"Add your first item" = "Add your first item";
+"Use the bar below or scan a barcode." = "Use the bar below or scan a barcode.";
+
+"Marked unbought" = "Marked unbought";
+"Marked bought" = "Marked bought";
+"Undo" = "Undo";
+
+"Members" = "Members";
+"No members found" = "No members found";
+"Invites" = "Invites";
+"Management" = "Management";
+"Only the list owner can manage members and invites." = "Only the list owner can manage members and invites.";
+"You" = "You";
+"Make Editor" = "Make Editor";
+"Make Viewer" = "Make Viewer";
+"Remove" = "Remove";
+"Revoke" = "Revoke";
+
+"role_owner" = "Owner";
+"role_editor" = "Editor";
+"role_viewer" = "Viewer";
+"status_pending" = "Pending";
+"status_accepted" = "Accepted";
+"status_revoked" = "Revoked";
+
+"default_list_title" = "Grocery";
+"Shoply list" = "Shoply list";
+"Select a list before sending an invite." = "Select a list before sending an invite.";
+"Please enter a valid email address." = "Please enter a valid email address.";
+"Shared" = "Shared";

@@ -25,6 +25,8 @@
 		40C4E85B7DA8058BE571C146 /* SessionViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B028C530953959681F09973 /* SessionViewModel.swift */; };
 		4760B27950C2ADC3CCEAE5C9 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 3EB539FA977815907DE92F9C /* FirebaseAuth */; };
 		4A83D49B7F59F65B7FF6846E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9DC20EB17884D80B667A3918 /* Assets.xcassets */; };
+		AB12CD34EF56AB78CD90EF12 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 12AB34CD56EF78AB90CD12EF /* Localizable.strings */; };
+		BC23DE45FA67BC89DE01FA23 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 23BC45DE67F890AB12CD34EF /* InfoPlist.strings */; };
 		52F1B3B7532FCE2AFA491CC0 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 53A5548FF4B83AAE4D854449 /* GoogleSignIn */; };
 		5CC1AE0CF603F56FF7C45840 /* ShoppingItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59C20011C78CCFF2C3B7A815 /* ShoppingItem.swift */; };
 		6316092DC306EC328E8E7A9A /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 058C21FA518A4D96993AA66F /* AuthService.swift */; };
@@ -86,9 +88,34 @@
 		F393B9B5AAAFA9DD8A12FA36 /* MembersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MembersView.swift; sourceTree = "<group>"; };
 		F732D47D35CF28550BAE08C9 /* ShoplyApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShoplyApp.swift; sourceTree = "<group>"; };
 		FC9AA22D2BE9928B023D65EF /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		34AB56CD78EF90AB12CD34EF /* Localizable.strings */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = Localizable.strings; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
+		45BC67DE89FA01BC23DE45FA /* Localizable.strings */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = Localizable.strings; path = he.lproj/Localizable.strings; sourceTree = "<group>"; };
+		56CD78EF90AB12CD34EF56AB /* InfoPlist.strings */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = InfoPlist.strings; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		67DE89FA01BC23DE45FA67BC /* InfoPlist.strings */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = InfoPlist.strings; path = he.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		FD360D10D43331CF341487E1 /* ListViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListViewModel.swift; sourceTree = "<group>"; };
 		FDADEDB538CFE9D94BF465B3 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXVariantGroup section */
+		12AB34CD56EF78AB90CD12EF /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				34AB56CD78EF90AB12CD34EF /* Localizable.strings */,
+				45BC67DE89FA01BC23DE45FA /* Localizable.strings */,
+			);
+			name = Localizable.strings;
+			sourceTree = "<group>";
+		};
+		23BC45DE67F890AB12CD34EF /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				56CD78EF90AB12CD34EF56AB /* InfoPlist.strings */,
+				67DE89FA01BC23DE45FA67BC /* InfoPlist.strings */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		2A6B8D083F264E89B897D4E8 /* Frameworks */ = {
@@ -159,6 +186,8 @@
 			isa = PBXGroup;
 			children = (
 				9DC20EB17884D80B667A3918 /* Assets.xcassets */,
+				23BC45DE67F890AB12CD34EF /* InfoPlist.strings */,
+				12AB34CD56EF78AB90CD12EF /* Localizable.strings */,
 				7067E5DACB333FF96D5A88D0 /* GoogleService-Info.plist */,
 				FC9AA22D2BE9928B023D65EF /* Info.plist */,
 				73D5A9B239E8B0EB0DCA5806 /* LaunchScreen.storyboard */,
@@ -257,11 +286,12 @@
 			};
 			buildConfigurationList = E695DF22C2AC0A99D45E8645 /* Build configuration list for PBXProject "Shoply" */;
 			compatibilityVersion = "Xcode 14.0";
-			developmentRegion = en;
+			developmentRegion = he;
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				Base,
 				en,
+				he,
 			);
 			mainGroup = 1ACA73DA854CDFBB1DC0BCB7;
 			minimizedProjectReferenceProxies = 1;
@@ -284,6 +314,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				4A83D49B7F59F65B7FF6846E /* Assets.xcassets in Resources */,
+				BC23DE45FA67BC89DE01FA23 /* InfoPlist.strings in Resources */,
+				AB12CD34EF56AB78CD90EF12 /* Localizable.strings in Resources */,
 				72CFF54755D6A8E46B49362B /* GoogleService-Info.plist in Resources */,
 				29D5F16873010218BD402F52 /* LaunchScreen.storyboard in Resources */,
 			);

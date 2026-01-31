@@ -65,9 +65,9 @@ private struct PendingInviteRow: View {
 
     private func roleLabel(_ role: String) -> String {
         switch role {
-        case "owner": return "Owner"
-        case "viewer": return "Viewer"
-        default: return "Editor"
+        case "owner": return NSLocalizedString("role_owner", comment: "")
+        case "viewer": return NSLocalizedString("role_viewer", comment: "")
+        default: return NSLocalizedString("role_editor", comment: "")
         }
     }
 }

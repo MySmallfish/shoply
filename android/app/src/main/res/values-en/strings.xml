@@ -1,0 +1,110 @@
+<resources>
+    <string name="app_name">Shoply</string>
+    <string name="default_web_client_id">566534331052-3gkgihds3ceno5ce1p4v80sesbjagj88.apps.googleusercontent.com</string>
+
+    <string name="sign_in_subtitle">Shared lists that update in real time</string>
+    <string name="continue_with_google">Continue with Google</string>
+    <string name="marked_unbought">Marked unbought</string>
+    <string name="marked_bought">Marked bought</string>
+    <string name="undo">Undo</string>
+
+    <string name="cd_members">Members</string>
+    <string name="cd_invite">Invite</string>
+    <string name="cd_pending_invitations">Pending invitations</string>
+    <string name="cd_sign_out">Sign out</string>
+    <string name="cd_scan">Scan</string>
+    <string name="cd_manage_member">Manage member</string>
+
+    <string name="add_first_item">Add your first item to start</string>
+    <string name="share_invite_link">Share invite link</string>
+
+    <string name="merge_lists_title">Merge lists?</string>
+    <string name="merge_prompt_message">You already have a list named "%1$s". Merge it into "%2$s"?</string>
+    <string name="merge">Merge</string>
+    <string name="keep_separate">Keep Separate</string>
+
+    <string name="add_item_placeholder">Add item</string>
+    <string name="details">Details</string>
+
+    <string name="lists">Lists</string>
+    <string name="new_list">New List</string>
+    <string name="join_with_link">Join with Link</string>
+
+    <string name="invite_title">Invite</string>
+    <string name="email">Email</string>
+    <string name="role_label_format">Role: %1$s</string>
+    <string name="role_editor">Editor</string>
+    <string name="role_viewer">Viewer</string>
+    <string name="role_owner">Owner</string>
+    <string name="send">Send</string>
+    <string name="cancel">Cancel</string>
+
+    <string name="list_name_placeholder">e.g. Grocery</string>
+    <string name="create">Create</string>
+
+    <string name="members_title">Members</string>
+    <string name="no_members_found">No members found</string>
+    <string name="invites_title">Invites</string>
+    <string name="no_pending_invites">No pending invites</string>
+    <string name="only_owner_manage">Only the list owner can manage members and invites.</string>
+    <string name="done">Done</string>
+
+    <string name="pending_invitations_title">Pending Invitations</string>
+    <string name="no_pending_invitations">No pending invitations</string>
+    <string name="accept">Accept</string>
+    <string name="you">You</string>
+    <string name="make_editor">Make Editor</string>
+    <string name="make_viewer">Make Viewer</string>
+    <string name="remove">Remove</string>
+    <string name="revoke">Revoke</string>
+
+    <string name="join_list_title">Join List</string>
+    <string name="paste_invite_link">Paste invite link</string>
+    <string name="join">Join</string>
+
+    <string name="item_details">Item Details</string>
+    <string name="name">Name</string>
+    <string name="barcode">Barcode</string>
+    <string name="price">Price</string>
+    <string name="icon">Icon</string>
+    <string name="description">Description</string>
+    <string name="save">Save</string>
+
+    <string name="how_much_did_you_buy">How much did you buy?</string>
+    <string name="left_to_buy_format">Left to buy: %1$d</string>
+    <string name="bought">Bought</string>
+    <string name="need">Need</string>
+    <string name="decrease_amount">Decrease amount</string>
+    <string name="increase_amount">Increase amount</string>
+    <string name="decrease">Decrease</string>
+    <string name="increase">Increase</string>
+    <string name="apply">Apply</string>
+
+    <string name="add_item_title">Add Item</string>
+    <string name="scanned_format">Scanned: %1$s</string>
+    <string name="add">Add</string>
+
+    <string name="camera_permission_required">Camera permission is required to scan</string>
+    <string name="allow_camera">Allow Camera</string>
+
+    <string name="invite_channel_name">Invitations</string>
+    <string name="invite_notification_title_default">Shoply</string>
+
+    <string name="default_list_title">Grocery</string>
+    <string name="shared_suffix">Shared</string>
+
+    <string name="select_list_before_invite">Select a list before sending an invite.</string>
+    <string name="sign_in_before_invite">Please sign in before inviting someone.</string>
+    <string name="valid_email_required">Please enter a valid email address.</string>
+    <string name="unable_send_invite">Unable to send invite.</string>
+    <string name="sign_in_again_accept">Please sign in again to accept the invite.</string>
+
+    <string name="merge_failed">Merge failed</string>
+    <string name="unable_merge_lists">Unable to merge lists.</string>
+    <string name="rename_failed">Unable to rename list.</string>
+    <string name="shoply_list_title">Shoply list</string>
+
+    <string name="status_pending">Pending</string>
+    <string name="status_accepted">Accepted</string>
+    <string name="status_revoked">Revoked</string>
+</resources>

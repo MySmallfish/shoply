@@ -141,7 +141,7 @@ struct MainListView: View {
             }
         } message: {
             if let prompt = session.mergePrompt {
-                Text("You already have a list named \"\(prompt.existingListTitle)\". Merge it into \"\(prompt.invitedListTitle)\"?")
+                Text(String(format: NSLocalizedString("merge_prompt_message", comment: ""), prompt.existingListTitle, prompt.invitedListTitle))
             }
         }
         .alert(
@@ -153,12 +153,14 @@ struct MainListView: View {
         ) {
             Button("OK") { session.mergeActionError = nil }
         } message: {
-            Text(session.mergeActionError ?? "Unable to merge lists.")
+            Text(session.mergeActionError ?? NSLocalizedString("Unable to merge lists.", comment: ""))
         }
         .overlay(alignment: .bottom) {
             if let undoAction = listViewModel.undoAction {
                 UndoToastView(
-                    title: undoAction.wasBought ? "Marked unbought" : "Marked bought",
+                    title: undoAction.wasBought
+                        ? NSLocalizedString("Marked unbought", comment: "")
+                        : NSLocalizedString("Marked bought", comment: ""),
                     onUndo: { listViewModel.undoLastToggle() },
                     onDismiss: { listViewModel.clearUndo() }
                 )
@@ -261,7 +263,10 @@ struct MainListView: View {
 
     private var pendingInvitesTitle: String {
         let count = session.pendingInvites.count
-        return count > 0 ? "Pending Invitations (\(count))" : "Pending Invitations"
+        if count > 0 {
+            return String(format: NSLocalizedString("pending_invitations_count_format", comment: ""), count)
+        }
+        return NSLocalizedString("Pending Invitations", comment: "")
     }
 
     private func bindIfNeeded() {

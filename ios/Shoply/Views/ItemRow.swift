@@ -18,10 +18,10 @@ struct ItemRow: View {
                     Text(item.name)
                         .foregroundColor(.primary)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-
-            Spacer()
 
             HStack(spacing: 6) {
                 Button(action: onDecrement) {

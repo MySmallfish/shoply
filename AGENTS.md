@@ -23,6 +23,7 @@ This file captures current project state, key decisions, build steps, and known 
 - Items now use quantity-based flow (no checklist UI). Quantities can go negative; list sorted by quantity left to buy.
 - Tapping an item opens a "How much did you buy?" dialog with Bought/Need toggle and large +/- amount controls; +/- in the list still adjust quantity by 1.
 - The adjust sheet uses a medium detent for one-hand use.
+- Localization added (Hebrew default + English). RTL enabled.
 - Barcode scan of an existing item opens the adjust dialog; otherwise prompt to add item details.
 - iOS Google Sign-In URL scheme restored in Info.plist.
 - Invites now write directly to Firestore only (no email or push); on success the app opens the system share sheet with an invite link.
@@ -140,6 +141,9 @@ AVD used earlier: `RedoxApi35`.
 - List: `.plain` style; single section sorted by quantity; empty state overlays the list to keep pull-to-refresh.
 - Add bar pinned in `safeAreaInset` with rounded text field + circular plus.
 - Scanner view uses `.resizeAspect` to avoid zoomed camera preview.
+- Localization: `ios/Shoply/Resources/en.lproj/Localizable.strings`, `ios/Shoply/Resources/he.lproj/Localizable.strings`, plus `InfoPlist.strings` for camera permission text.
+- Default language is Hebrew via `@AppStorage("appLanguage")` in `ios/Shoply/App/ShoplyApp.swift` and `layoutDirection` switches to RTL when the language is Hebrew/Arabic.
+- Xcode project `developmentRegion` and `ios/Shoply/Resources/Info.plist` `CFBundleDevelopmentRegion` are set to `he`.
 
 ### Android
 - Material3 `TopAppBar` with list dropdown + actions.
@@ -148,6 +152,9 @@ AVD used earlier: `RedoxApi35`.
 - FloatingActionButton triggers scanner.
 - Pull-to-refresh indicator at top center.
 - Pending invitations dialog opened from the email icon in the top app bar.
+- Localization: `android/app/src/main/res/values/strings.xml` (Hebrew default), `android/app/src/main/res/values-en/strings.xml` (English).
+- RTL + locales: `android:localeConfig="@xml/locales_config"` and `android:supportsRtl="true"` in `android/app/src/main/AndroidManifest.xml`, `android/app/src/main/res/xml/locales_config.xml` lists `he`/`en`.
+- Default language is forced to Hebrew via `AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("he"))` in `android/app/src/main/java/com/shoply/app/ShoplyApplication.kt` (requires `androidx.appcompat:appcompat`).
 
 ## Known Issues / Things to Re-Verify
 - Invite flow end-to-end: send invite -> accept -> member appears.

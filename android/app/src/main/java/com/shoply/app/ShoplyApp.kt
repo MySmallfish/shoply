@@ -75,6 +75,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -130,13 +131,13 @@ fun SignInScreen(viewModel: MainViewModel) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "Shoply",
+            text = stringResource(R.string.app_name),
             fontSize = 36.sp,
             fontWeight = FontWeight.Bold
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "Shared lists that update in real time",
+            text = stringResource(R.string.sign_in_subtitle),
             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
         )
         Spacer(modifier = Modifier.height(32.dp))
@@ -145,7 +146,7 @@ fun SignInScreen(viewModel: MainViewModel) {
             onClick = { if (activity != null) launcher.launch(googleClient.signInIntent) },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Continue with Google")
+            Text(stringResource(R.string.continue_with_google))
         }
     }
 }
@@ -239,8 +240,12 @@ fun ListScreen(viewModel: MainViewModel) {
     LaunchedEffect(undoAction) {
         val action = undoAction ?: return@LaunchedEffect
         val result = snackbarHostState.showSnackbar(
-            message = if (action.wasBought) "Marked unbought" else "Marked bought",
-            actionLabel = "Undo",
+            message = if (action.wasBought) {
+                context.getString(R.string.marked_unbought)
+            } else {
+                context.getString(R.string.marked_bought)
+            },
+            actionLabel = context.getString(R.string.undo),
             duration = SnackbarDuration.Short
         )
         if (result == SnackbarResult.ActionPerformed) {
@@ -264,16 +269,16 @@ fun ListScreen(viewModel: MainViewModel) {
                 },
                 actions = {
                     IconButton(onClick = { showMembers = true }) {
-                        Icon(imageVector = Icons.Default.Group, contentDescription = "Members")
+                        Icon(imageVector = Icons.Default.Group, contentDescription = stringResource(R.string.cd_members))
                     }
                     IconButton(onClick = { showInvite = true }) {
-                        Icon(imageVector = Icons.Default.PersonAdd, contentDescription = "Invite")
+                        Icon(imageVector = Icons.Default.PersonAdd, contentDescription = stringResource(R.string.cd_invite))
                     }
                     IconButton(onClick = { showPendingInvites = true }) {
-                        Icon(imageVector = Icons.Default.Email, contentDescription = "Pending invitations")
+                        Icon(imageVector = Icons.Default.Email, contentDescription = stringResource(R.string.cd_pending_invitations))
                     }
                     IconButton(onClick = { viewModel.signOut() }) {
-                        Icon(imageVector = Icons.Default.PowerSettingsNew, contentDescription = "Sign out")
+                        Icon(imageVector = Icons.Default.PowerSettingsNew, contentDescription = stringResource(R.string.cd_sign_out))
                     }
                 }
             )
@@ -281,7 +286,7 @@ fun ListScreen(viewModel: MainViewModel) {
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
             FloatingActionButton(onClick = { showScanner = true }) {
-                Icon(imageVector = Icons.Default.CameraAlt, contentDescription = "Scan")
+                Icon(imageVector = Icons.Default.CameraAlt, contentDescription = stringResource(R.string.cd_scan))
             }
         },
         bottomBar = {
@@ -358,7 +363,7 @@ fun ListScreen(viewModel: MainViewModel) {
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = "Add your first item to start",
+                                text = stringResource(R.string.add_first_item),
                                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
                             )
                         }
@@ -397,7 +402,12 @@ fun ListScreen(viewModel: MainViewModel) {
                             type = "text/plain"
                             putExtra(Intent.EXTRA_TEXT, inviteUrl)
                         }
-                        context.startActivity(Intent.createChooser(shareIntent, "Share invite link"))
+                        context.startActivity(
+                            Intent.createChooser(
+                                shareIntent,
+                                context.getString(R.string.share_invite_link)
+                            )
+                        )
                         showInvite = false
                     },
                     onError = { message ->
@@ -431,21 +441,24 @@ fun ListScreen(viewModel: MainViewModel) {
     mergePrompt?.let { prompt ->
         AlertDialog(
             onDismissRequest = { viewModel.dismissMergePrompt() },
-            title = { Text("Merge lists?") },
+            title = { Text(stringResource(R.string.merge_lists_title)) },
             text = {
                 Text(
-                    "You already have a list named \"${prompt.existingListTitle}\". " +
-                        "Merge it into \"${prompt.invitedListTitle}\"?"
+                    stringResource(
+                        R.string.merge_prompt_message,
+                        prompt.existingListTitle,
+                        prompt.invitedListTitle
+                    )
                 )
             },
             confirmButton = {
                 TextButton(onClick = { viewModel.mergeInvitedList(prompt) }) {
-                    Text("Merge")
+                    Text(stringResource(R.string.merge))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { viewModel.keepInviteSeparate(prompt) }) {
-                    Text("Keep Separate")
+                    Text(stringResource(R.string.keep_separate))
                 }
             }
         )
@@ -576,7 +589,7 @@ private fun ItemRow(
             )
         }
         IconButton(onClick = onDecrement) {
-            Icon(imageVector = Icons.Default.Remove, contentDescription = "Decrease")
+            Icon(imageVector = Icons.Default.Remove, contentDescription = stringResource(R.string.decrease))
         }
         Text(
             text = item.quantity.toString(),
@@ -584,7 +597,7 @@ private fun ItemRow(
             modifier = Modifier.widthIn(min = 20.dp)
         )
         IconButton(onClick = onIncrement) {
-            Icon(imageVector = Icons.Default.Add, contentDescription = "Increase")
+            Icon(imageVector = Icons.Default.Add, contentDescription = stringResource(R.string.increase))
         }
     }
 }
@@ -609,7 +622,7 @@ private fun AddItemBar(
             value = text,
             onValueChange = onTextChange,
             modifier = Modifier.weight(1f),
-            placeholder = { Text("Add item") },
+            placeholder = { Text(stringResource(R.string.add_item_placeholder)) },
             singleLine = true,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(
@@ -623,7 +636,7 @@ private fun AddItemBar(
         )
         Spacer(modifier = Modifier.size(12.dp))
         IconButton(onClick = onDetails, enabled = canAdd) {
-            Icon(imageVector = Icons.Default.Edit, contentDescription = "Details")
+            Icon(imageVector = Icons.Default.Edit, contentDescription = stringResource(R.string.details))
         }
         Spacer(modifier = Modifier.size(6.dp))
         Button(
@@ -645,7 +658,8 @@ private fun ListDropdown(
     onJoin: () -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val currentTitle = lists.firstOrNull { it.id == selectedListId }?.title ?: "Lists"
+    val currentTitle = lists.firstOrNull { it.id == selectedListId }?.title
+        ?: stringResource(R.string.lists)
 
     Box {
         TextButton(onClick = { expanded = true }) {
@@ -667,14 +681,14 @@ private fun ListDropdown(
             }
             Divider()
             androidx.compose.material3.DropdownMenuItem(
-                text = { Text("New List") },
+                text = { Text(stringResource(R.string.new_list)) },
                 onClick = {
                     expanded = false
                     onCreate()
                 }
             )
             androidx.compose.material3.DropdownMenuItem(
-                text = { Text("Join with Link") },
+                text = { Text(stringResource(R.string.join_with_link)) },
                 onClick = {
                     expanded = false
                     onJoin()
@@ -689,32 +703,37 @@ private fun InviteDialog(onDismiss: () -> Unit, onSend: (String, String) -> Unit
     var email by remember { mutableStateOf("") }
     var role by remember { mutableStateOf("editor") }
     var roleExpanded by remember { mutableStateOf(false) }
+    val roleLabel = when (role) {
+        "owner" -> stringResource(R.string.role_owner)
+        "viewer" -> stringResource(R.string.role_viewer)
+        else -> stringResource(R.string.role_editor)
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Invite") },
+        title = { Text(stringResource(R.string.invite_title)) },
         text = {
             Column {
                 TextField(
                     value = email,
                     onValueChange = { email = it },
-                    placeholder = { Text("Email") }
+                    placeholder = { Text(stringResource(R.string.email)) }
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 Box {
                     TextButton(onClick = { roleExpanded = true }) {
-                        Text("Role: ${role.replaceFirstChar { it.uppercase() }}")
+                        Text(stringResource(R.string.role_label_format, roleLabel))
                     }
                     androidx.compose.material3.DropdownMenu(
                         expanded = roleExpanded,
                         onDismissRequest = { roleExpanded = false }
                     ) {
                         androidx.compose.material3.DropdownMenuItem(
-                            text = { Text("Editor") },
+                            text = { Text(stringResource(R.string.role_editor)) },
                             onClick = { role = "editor"; roleExpanded = false }
                         )
                         androidx.compose.material3.DropdownMenuItem(
-                            text = { Text("Viewer") },
+                            text = { Text(stringResource(R.string.role_viewer)) },
                             onClick = { role = "viewer"; roleExpanded = false }
                         )
                     }
@@ -723,12 +742,12 @@ private fun InviteDialog(onDismiss: () -> Unit, onSend: (String, String) -> Unit
         },
         confirmButton = {
             Button(onClick = { onSend(email, role) }, enabled = email.trim().isNotEmpty()) {
-                Text("Send")
+                Text(stringResource(R.string.send))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.cancel))
             }
         }
     )
@@ -740,22 +759,22 @@ private fun CreateListDialog(onDismiss: () -> Unit, onCreate: (String) -> Unit) 
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("New List") },
+        title = { Text(stringResource(R.string.new_list)) },
         text = {
             TextField(
                 value = title,
                 onValueChange = { title = it },
-                placeholder = { Text("e.g. Grocery") }
+                placeholder = { Text(stringResource(R.string.list_name_placeholder)) }
             )
         },
         confirmButton = {
             Button(onClick = { onCreate(title) }, enabled = title.trim().isNotEmpty()) {
-                Text("Create")
+                Text(stringResource(R.string.create))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.cancel))
             }
         }
     )
@@ -783,11 +802,14 @@ private fun MembersDialog(
                     .fillMaxWidth()
                     .padding(20.dp)
             ) {
-                Text("Members", style = MaterialTheme.typography.titleLarge)
+                Text(stringResource(R.string.members_title), style = MaterialTheme.typography.titleLarge)
                 Spacer(modifier = Modifier.height(12.dp))
 
                 if (members.isEmpty()) {
-                    Text("No members found", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                    Text(
+                        stringResource(R.string.no_members_found),
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
                 } else {
                     LazyColumn(
                         modifier = Modifier.heightIn(max = 360.dp)
@@ -806,10 +828,13 @@ private fun MembersDialog(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 if (isOwner) {
-                    Text("Invites", style = MaterialTheme.typography.titleLarge)
+                    Text(stringResource(R.string.invites_title), style = MaterialTheme.typography.titleLarge)
                     Spacer(modifier = Modifier.height(8.dp))
                     if (invites.isEmpty()) {
-                        Text("No pending invites", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                        Text(
+                            stringResource(R.string.no_pending_invites),
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        )
                     } else {
                         Column {
                             invites.forEach { invite ->
@@ -819,7 +844,7 @@ private fun MembersDialog(
                     }
                 } else {
                     Text(
-                        "Only the list owner can manage members and invites.",
+                        stringResource(R.string.only_owner_manage),
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
                 }
@@ -830,7 +855,7 @@ private fun MembersDialog(
                     horizontalArrangement = Arrangement.End
                 ) {
                     TextButton(onClick = onDismiss) {
-                        Text("Done")
+                        Text(stringResource(R.string.done))
                     }
                 }
             }
@@ -854,11 +879,14 @@ private fun PendingInvitesDialog(
                     .fillMaxWidth()
                     .padding(20.dp)
             ) {
-                Text("Pending Invitations", style = MaterialTheme.typography.titleLarge)
+                Text(stringResource(R.string.pending_invitations_title), style = MaterialTheme.typography.titleLarge)
                 Spacer(modifier = Modifier.height(12.dp))
 
                 if (invites.isEmpty()) {
-                    Text("No pending invitations", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                    Text(
+                        stringResource(R.string.no_pending_invitations),
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
                 } else {
                     LazyColumn(
                         modifier = Modifier.heightIn(max = 360.dp)
@@ -875,7 +903,7 @@ private fun PendingInvitesDialog(
                     horizontalArrangement = Arrangement.End
                 ) {
                     TextButton(onClick = onDismiss) {
-                        Text("Done")
+                        Text(stringResource(R.string.done))
                     }
                 }
             }
@@ -892,7 +920,12 @@ private fun PendingInviteRow(invite: PendingInvite, onAccept: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(invite.listTitle, fontWeight = FontWeight.SemiBold)
+            val title = if (invite.listTitle.isBlank()) {
+                stringResource(R.string.shoply_list_title)
+            } else {
+                invite.listTitle
+            }
+            Text(title, fontWeight = FontWeight.SemiBold)
             Text(
                 roleLabel(invite.role),
                 fontSize = 12.sp,
@@ -901,7 +934,7 @@ private fun PendingInviteRow(invite: PendingInvite, onAccept: () -> Unit) {
         }
 
         Button(onClick = onAccept) {
-            Text("Accept")
+            Text(stringResource(R.string.accept))
         }
     }
 }
@@ -927,7 +960,7 @@ private fun MemberRow(
                 if (member.isCurrentUser) {
                     Spacer(modifier = Modifier.size(6.dp))
                     Text(
-                        "You",
+                        stringResource(R.string.you),
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
@@ -948,21 +981,21 @@ private fun MemberRow(
         if (isOwner && !member.isCurrentUser && member.role != "owner") {
             Box {
                 IconButton(onClick = { menuOpen = true }) {
-                    Icon(imageVector = Icons.Default.MoreVert, contentDescription = "Manage member")
+                    Icon(imageVector = Icons.Default.MoreVert, contentDescription = stringResource(R.string.cd_manage_member))
                 }
                 androidx.compose.material3.DropdownMenu(
                     expanded = menuOpen,
                     onDismissRequest = { menuOpen = false }
                 ) {
                     androidx.compose.material3.DropdownMenuItem(
-                        text = { Text("Make Editor") },
+                        text = { Text(stringResource(R.string.make_editor)) },
                         onClick = {
                             menuOpen = false
                             onRoleChange("editor")
                         }
                     )
                     androidx.compose.material3.DropdownMenuItem(
-                        text = { Text("Make Viewer") },
+                        text = { Text(stringResource(R.string.make_viewer)) },
                         onClick = {
                             menuOpen = false
                             onRoleChange("viewer")
@@ -970,7 +1003,7 @@ private fun MemberRow(
                     )
                     Divider()
                     androidx.compose.material3.DropdownMenuItem(
-                        text = { Text("Remove") },
+                        text = { Text(stringResource(R.string.remove)) },
                         onClick = {
                             menuOpen = false
                             onRemove()
@@ -993,7 +1026,7 @@ private fun InviteRow(invite: InviteViewData, onRevoke: () -> Unit) {
         Column(modifier = Modifier.weight(1f)) {
             Text(invite.email, fontWeight = FontWeight.SemiBold)
             Text(
-                "${roleLabel(invite.role)} • ${invite.status}",
+                "${roleLabel(invite.role)} • ${statusLabel(invite.status)}",
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
@@ -1001,17 +1034,27 @@ private fun InviteRow(invite: InviteViewData, onRevoke: () -> Unit) {
 
         if (invite.status == "pending") {
             TextButton(onClick = onRevoke) {
-                Text("Revoke")
+                Text(stringResource(R.string.revoke))
             }
         }
     }
 }
 
+@Composable
 private fun roleLabel(role: String): String {
     return when (role) {
-        "owner" -> "Owner"
-        "editor" -> "Editor"
-        else -> "Viewer"
+        "owner" -> stringResource(R.string.role_owner)
+        "viewer" -> stringResource(R.string.role_viewer)
+        else -> stringResource(R.string.role_editor)
+    }
+}
+
+@Composable
+private fun statusLabel(status: String): String {
+    return when (status) {
+        "accepted" -> stringResource(R.string.status_accepted)
+        "revoked" -> stringResource(R.string.status_revoked)
+        else -> stringResource(R.string.status_pending)
     }
 }
 
@@ -1022,22 +1065,22 @@ private fun JoinListDialog(onDismiss: () -> Unit, onJoin: (String) -> Unit) {
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Join List") },
+        title = { Text(stringResource(R.string.join_list_title)) },
         text = {
             TextField(
                 value = input,
                 onValueChange = { input = it },
-                placeholder = { Text("Paste invite link") }
+                placeholder = { Text(stringResource(R.string.paste_invite_link)) }
             )
         },
         confirmButton = {
             Button(onClick = { token?.let(onJoin) }, enabled = !token.isNullOrBlank()) {
-                Text("Join")
+                Text(stringResource(R.string.join))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.cancel))
             }
         }
     )
@@ -1111,49 +1154,49 @@ private fun ItemDetailsDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Item Details") },
+        title = { Text(stringResource(R.string.item_details)) },
         text = {
             Column {
                 TextField(
                     value = draft.name,
                     onValueChange = { onDraftChange(draft.copy(name = it)) },
-                    placeholder = { Text("Name") }
+                    placeholder = { Text(stringResource(R.string.name)) }
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 TextField(
                     value = draft.barcode,
                     onValueChange = { onDraftChange(draft.copy(barcode = it)) },
-                    placeholder = { Text("Barcode") },
+                    placeholder = { Text(stringResource(R.string.barcode)) },
                     enabled = allowBarcodeEdit
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 TextField(
                     value = draft.price,
                     onValueChange = { onDraftChange(draft.copy(price = it)) },
-                    placeholder = { Text("Price") }
+                    placeholder = { Text(stringResource(R.string.price)) }
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 TextField(
                     value = draft.icon,
                     onValueChange = { onDraftChange(draft.copy(icon = it)) },
-                    placeholder = { Text("Icon") }
+                    placeholder = { Text(stringResource(R.string.icon)) }
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 TextField(
                     value = draft.description,
                     onValueChange = { onDraftChange(draft.copy(description = it)) },
-                    placeholder = { Text("Description") }
+                    placeholder = { Text(stringResource(R.string.description)) }
                 )
             }
         },
         confirmButton = {
             Button(onClick = onSave, enabled = draft.name.trim().isNotEmpty()) {
-                Text("Save")
+                Text(stringResource(R.string.save))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.cancel))
             }
         }
     )
@@ -1171,25 +1214,28 @@ private fun AdjustQuantityDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("How much did you buy?") },
+        title = { Text(stringResource(R.string.how_much_did_you_buy)) },
         text = {
             Column {
-                Text("Left to buy: ${item.quantity}", color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f))
+                Text(
+                    stringResource(R.string.left_to_buy_format, item.quantity),
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                )
                 Spacer(modifier = Modifier.height(12.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     if (mode == QuantityMode.BOUGHT) {
                         Button(onClick = { onModeChange(QuantityMode.BOUGHT) }) {
-                            Text("Bought")
+                            Text(stringResource(R.string.bought))
                         }
                         OutlinedButton(onClick = { onModeChange(QuantityMode.NEED) }) {
-                            Text("Need")
+                            Text(stringResource(R.string.need))
                         }
                     } else {
                         OutlinedButton(onClick = { onModeChange(QuantityMode.BOUGHT) }) {
-                            Text("Bought")
+                            Text(stringResource(R.string.bought))
                         }
                         Button(onClick = { onModeChange(QuantityMode.NEED) }) {
-                            Text("Need")
+                            Text(stringResource(R.string.need))
                         }
                     }
                 }
@@ -1205,7 +1251,7 @@ private fun AdjustQuantityDialog(
                         shape = CircleShape,
                         contentPadding = PaddingValues(0.dp)
                     ) {
-                        Icon(imageVector = Icons.Default.Remove, contentDescription = "Decrease amount")
+                        Icon(imageVector = Icons.Default.Remove, contentDescription = stringResource(R.string.decrease_amount))
                     }
                     Text(
                         text = amount.coerceAtLeast(1).toString(),
@@ -1218,19 +1264,19 @@ private fun AdjustQuantityDialog(
                         shape = CircleShape,
                         contentPadding = PaddingValues(0.dp)
                     ) {
-                        Icon(imageVector = Icons.Default.Add, contentDescription = "Increase amount")
+                        Icon(imageVector = Icons.Default.Add, contentDescription = stringResource(R.string.increase_amount))
                     }
                 }
             }
         },
         confirmButton = {
             Button(onClick = onApply) {
-                Text("Apply")
+                Text(stringResource(R.string.apply))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.cancel))
             }
         }
     )
@@ -1252,44 +1298,47 @@ private fun AddScannedItemDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Add Item") },
+        title = { Text(stringResource(R.string.add_item_title)) },
         text = {
             Column {
-                Text("Scanned: $barcode", fontWeight = FontWeight.SemiBold)
+                Text(
+                    stringResource(R.string.scanned_format, barcode),
+                    fontWeight = FontWeight.SemiBold
+                )
                 Spacer(modifier = Modifier.height(8.dp))
                 TextField(
                     value = draft.name,
                     onValueChange = { onDraftChange(draft.copy(name = it)) },
-                    placeholder = { Text("Name") }
+                    placeholder = { Text(stringResource(R.string.name)) }
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 TextField(
                     value = draft.price,
                     onValueChange = { onDraftChange(draft.copy(price = it)) },
-                    placeholder = { Text("Price") }
+                    placeholder = { Text(stringResource(R.string.price)) }
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 TextField(
                     value = draft.icon,
                     onValueChange = { onDraftChange(draft.copy(icon = it)) },
-                    placeholder = { Text("Icon") }
+                    placeholder = { Text(stringResource(R.string.icon)) }
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 TextField(
                     value = draft.description,
                     onValueChange = { onDraftChange(draft.copy(description = it)) },
-                    placeholder = { Text("Description") }
+                    placeholder = { Text(stringResource(R.string.description)) }
                 )
             }
         },
         confirmButton = {
             Button(onClick = onAdd, enabled = draft.name.trim().isNotEmpty()) {
-                Text("Add")
+                Text(stringResource(R.string.add))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.cancel))
             }
         }
     )

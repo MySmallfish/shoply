@@ -5,6 +5,7 @@ import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import android.util.Log
+import androidx.annotation.StringRes
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.FieldValue
@@ -70,6 +71,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val prefs = application.getSharedPreferences("shoply", Context.MODE_PRIVATE)
     private val db = FirebaseFirestore.getInstance()
+    private val defaultListFallbacks = listOf("Grocery", "מצרכים")
+
+    private fun text(@StringRes resId: Int, vararg args: Any): String {
+        val context = getApplication<Application>()
+        return if (args.isNotEmpty()) {
+            context.getString(resId, *args)
+        } else {
+            context.getString(resId)
+        }
+    }
 
     init {
         auth.addAuthStateListener { firebaseAuth ->
@@ -232,21 +243,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         onError: (String) -> Unit
     ) {
         val listId = _selectedListId.value ?: run {
-            onError("Select a list before sending an invite.")
+            onError(text(R.string.select_list_before_invite))
             return
         }
         val userId = _user.value?.uid ?: run {
-            onError("Please sign in before inviting someone.")
+            onError(text(R.string.sign_in_before_invite))
             return
         }
         val trimmed = email.trim()
         if (trimmed.isEmpty()) {
-            onError("Please enter a valid email address.")
+            onError(text(R.string.valid_email_required))
             return
         }
         val creatorName = _user.value?.displayName ?: ""
         val creatorEmail = _user.value?.email ?: ""
-        val listTitle = _lists.value.firstOrNull { it.id == listId }?.title ?: "Shoply list"
+        val listTitle = _lists.value.firstOrNull { it.id == listId }?.title ?: text(R.string.shoply_list_title)
         val token = UUID.randomUUID().toString().replace("-", "")
         val emailLower = trimmed.lowercase()
         val allowedEmails = if (trimmed == emailLower) listOf(trimmed) else listOf(trimmed, emailLower)
@@ -275,7 +286,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
             .addOnSuccessListener { onInviteCreated(token) }
             .addOnFailureListener { error ->
-                onError(error.localizedMessage ?: "Unable to send invite.")
+                onError(error.localizedMessage ?: text(R.string.unable_send_invite))
             }
     }
 
@@ -312,7 +323,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val user = auth.currentUser
         if (user == null) {
             Log.w(inviteLogTag, "acceptInvite: no current user")
-            _inviteActionError.value = "Please sign in again to accept the invite."
+            _inviteActionError.value = text(R.string.sign_in_again_accept)
             return
         }
         val invite = _pendingInvites.value.firstOrNull { it.token == trimmed }
@@ -378,7 +389,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _inviteActionError.value = null
         repo.mergeLists(prompt.existingListId, prompt.invitedListId) { error ->
             if (error != null) {
-                _inviteActionError.value = "Merge failed: ${error.localizedMessage ?: "Unable to merge lists."}"
+                val message = error.localizedMessage ?: text(R.string.unable_merge_lists)
+                _inviteActionError.value = "${text(R.string.merge_failed)}: $message"
             } else {
                 _mergePrompt.value = null
                 pendingInviteContext = null
@@ -389,11 +401,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun keepInviteSeparate(prompt: MergePrompt) {
         _inviteActionError.value = null
-        val suffix = if (prompt.creatorName.isBlank()) "Shared" else prompt.creatorName
+        val suffix = if (prompt.creatorName.isBlank()) text(R.string.shared_suffix) else prompt.creatorName
         val title = "${prompt.invitedListTitle} - $suffix"
         repo.updateListTitle(prompt.invitedListId, title) { error ->
             if (error != null) {
-                _inviteActionError.value = "Rename failed: ${error.localizedMessage ?: "Unable to rename list."}"
+                _inviteActionError.value = error.localizedMessage ?: text(R.string.rename_failed)
             } else {
                 _mergePrompt.value = null
                 pendingInviteContext = null
@@ -639,9 +651,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun createDefaultListIfNeeded(userId: String) {
         if (isCreatingDefault) return
-        if (_lists.value.any { it.title.equals("Grocery", ignoreCase = true) }) return
+        val defaultTitle = text(R.string.default_list_title)
+        if (_lists.value.any { list ->
+                list.title.equals(defaultTitle, ignoreCase = true)
+                    || defaultListFallbacks.any { fallback -> list.title.equals(fallback, ignoreCase = true) }
+            }) {
+            return
+        }
         isCreatingDefault = true
-        repo.createList("Grocery", userId) { listId ->
+        repo.createList(defaultTitle, userId) { listId ->
             listId?.let { selectList(it) }
             isCreatingDefault = false
         }
@@ -702,7 +720,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             return when {
                 creatorName.isNotBlank() -> creatorName
                 creatorEmail.isNotBlank() -> creatorEmail
-                else -> "Shared"
+                else -> text(R.string.shared_suffix)
             }
         }
     }

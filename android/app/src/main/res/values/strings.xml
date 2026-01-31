@@ -1,4 +1,110 @@
 <resources>
     <string name="app_name">Shoply</string>
     <string name="default_web_client_id">566534331052-3gkgihds3ceno5ce1p4v80sesbjagj88.apps.googleusercontent.com</string>
+
+    <string name="sign_in_subtitle">רשימות משותפות שמתעדכנות בזמן אמת</string>
+    <string name="continue_with_google">המשך עם Google</string>
+    <string name="marked_unbought">סומן כלא נקנה</string>
+    <string name="marked_bought">סומן כנקנה</string>
+    <string name="undo">בטל</string>
+
+    <string name="cd_members">חברים</string>
+    <string name="cd_invite">הזמנה</string>
+    <string name="cd_pending_invitations">הזמנות ממתינות</string>
+    <string name="cd_sign_out">התנתקות</string>
+    <string name="cd_scan">סריקה</string>
+    <string name="cd_manage_member">ניהול חבר</string>
+
+    <string name="add_first_item">הוסף את הפריט הראשון כדי להתחיל</string>
+    <string name="share_invite_link">שתף קישור הזמנה</string>
+
+    <string name="merge_lists_title">למזג רשימות?</string>
+    <string name="merge_prompt_message">כבר קיימת לך רשימה בשם "%1$s". למזג אותה אל "%2$s"?</string>
+    <string name="merge">מיזוג</string>
+    <string name="keep_separate">השאר בנפרד</string>
+
+    <string name="add_item_placeholder">הוסף פריט</string>
+    <string name="details">פרטים</string>
+
+    <string name="lists">רשימות</string>
+    <string name="new_list">רשימה חדשה</string>
+    <string name="join_with_link">הצטרף עם קישור</string>
+
+    <string name="invite_title">הזמנה</string>
+    <string name="email">אימייל</string>
+    <string name="role_label_format">תפקיד: %1$s</string>
+    <string name="role_editor">עורך</string>
+    <string name="role_viewer">צופה</string>
+    <string name="role_owner">בעלים</string>
+    <string name="send">שלח</string>
+    <string name="cancel">ביטול</string>
+
+    <string name="list_name_placeholder">למשל: מצרכים</string>
+    <string name="create">צור</string>
+
+    <string name="members_title">חברים</string>
+    <string name="no_members_found">לא נמצאו חברים</string>
+    <string name="invites_title">הזמנות</string>
+    <string name="no_pending_invites">אין הזמנות ממתינות</string>
+    <string name="only_owner_manage">רק בעל הרשימה יכול לנהל חברים והזמנות.</string>
+    <string name="done">סיום</string>
+
+    <string name="pending_invitations_title">הזמנות ממתינות</string>
+    <string name="no_pending_invitations">אין הזמנות ממתינות</string>
+    <string name="accept">אישור</string>
+    <string name="you">את/ה</string>
+    <string name="make_editor">הפוך לעורך</string>
+    <string name="make_viewer">הפוך לצופה</string>
+    <string name="remove">הסר</string>
+    <string name="revoke">בטל</string>
+
+    <string name="join_list_title">הצטרף לרשימה</string>
+    <string name="paste_invite_link">הדבק קישור הזמנה</string>
+    <string name="join">הצטרף</string>
+
+    <string name="item_details">פרטי פריט</string>
+    <string name="name">שם</string>
+    <string name="barcode">ברקוד</string>
+    <string name="price">מחיר</string>
+    <string name="icon">אייקון</string>
+    <string name="description">תיאור</string>
+    <string name="save">שמור</string>
+
+    <string name="how_much_did_you_buy">כמה קנית?</string>
+    <string name="left_to_buy_format">נשאר לקנייה: %1$d</string>
+    <string name="bought">נקנה</string>
+    <string name="need">צריך</string>
+    <string name="decrease_amount">הקטן כמות</string>
+    <string name="increase_amount">הגדל כמות</string>
+    <string name="decrease">הקטן</string>
+    <string name="increase">הגדל</string>
+    <string name="apply">החל</string>
+
+    <string name="add_item_title">הוסף פריט</string>
+    <string name="scanned_format">נסרק: %1$s</string>
+    <string name="add">הוסף</string>
+
+    <string name="camera_permission_required">נדרשת הרשאת מצלמה לסריקה</string>
+    <string name="allow_camera">אפשר מצלמה</string>
+
+    <string name="invite_channel_name">הזמנות</string>
+    <string name="invite_notification_title_default">Shoply</string>
+
+    <string name="default_list_title">מצרכים</string>
+    <string name="shared_suffix">משותף</string>
+
+    <string name="select_list_before_invite">בחר רשימה לפני שליחת הזמנה.</string>
+    <string name="sign_in_before_invite">נא להתחבר לפני שליחת הזמנה.</string>
+    <string name="valid_email_required">אנא הזן כתובת אימייל תקינה.</string>
+    <string name="unable_send_invite">לא ניתן לשלוח הזמנה.</string>
+    <string name="sign_in_again_accept">נא להתחבר שוב כדי לאשר את ההזמנה.</string>
+
+    <string name="merge_failed">המיזוג נכשל</string>
+    <string name="unable_merge_lists">לא ניתן למזג רשימות.</string>
+    <string name="rename_failed">לא ניתן לשנות שם לרשימה.</string>
+    <string name="shoply_list_title">רשימת Shoply</string>
+
+    <string name="status_pending">ממתין</string>
+    <string name="status_accepted">אושר</string>
+    <string name="status_revoked">בוטל</string>
 </resources>

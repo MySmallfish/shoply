@@ -1,0 +1,94 @@
+"Shoply" = "Shoply";
+"Shared lists that update in real time" = "רשימות משותפות שמתעדכנות בזמן אמת";
+"Continue with Google" = "המשך עם Google";
+
+"Invite" = "הזמנה";
+"Email" = "אימייל";
+"Role" = "תפקיד";
+"Editor" = "עורך";
+"Viewer" = "צופה";
+"Send" = "שלח";
+"Cancel" = "ביטול";
+"Invite failed" = "ההזמנה נכשלה";
+"Unable to send invite." = "לא ניתן לשלוח הזמנה.";
+
+"Pending Invitations" = "הזמנות ממתינות";
+"pending_invitations_count_format" = "הזמנות ממתינות (%d)";
+"No pending invitations" = "אין הזמנות ממתינות";
+"No pending invites" = "אין הזמנות ממתינות";
+"Invitation" = "הזמנה";
+"OK" = "אישור";
+"Done" = "סיום";
+"Accept" = "אישור";
+
+"Add Item" = "הוסף פריט";
+"Add" = "הוסף";
+"Update Item" = "עדכון פריט";
+"Apply" = "החל";
+"How much?" = "כמה?";
+"left_to_buy_format" = "נשאר לקנייה: %d";
+
+"Item Details" = "פרטי פריט";
+"Save" = "שמור";
+
+"Join List" = "הצטרף לרשימה";
+"Join" = "הצטרף";
+"Paste invite link" = "הדבק קישור הזמנה";
+"Invite link or token" = "קישור הזמנה או טוקן";
+
+"List name" = "שם הרשימה";
+"New List" = "רשימה חדשה";
+"Create" = "צור";
+"Create List" = "צור רשימה";
+"e.g. Grocery" = "למשל: מצרכים";
+
+"Add item" = "הוסף פריט";
+"Name" = "שם";
+"Barcode" = "ברקוד";
+"Price" = "מחיר";
+"Icon" = "אייקון";
+"Description" = "תיאור";
+
+"Lists" = "רשימות";
+"Join with Link" = "הצטרף עם קישור";
+
+"Merge lists?" = "למזג רשימות?";
+"Merge" = "מיזוג";
+"Keep Separate" = "השאר בנפרד";
+"merge_prompt_message" = "כבר קיימת לך רשימה בשם \"%@\". למזג אותה אל \"%@\"?";
+"Merge failed" = "המיזוג נכשל";
+"Unable to merge lists." = "לא ניתן למזג רשימות.";
+
+"Sign Out" = "התנתקות";
+"No list selected" = "לא נבחרה רשימה";
+"Create a list to start sharing" = "צור רשימה כדי להתחיל לשתף";
+"Add your first item" = "הוסף את הפריט הראשון שלך";
+"Use the bar below or scan a barcode." = "השתמש בשורת ההוספה או סרוק ברקוד.";
+
+"Marked unbought" = "סומן כלא נקנה";
+"Marked bought" = "סומן כנקנה";
+"Undo" = "בטל";
+
+"Members" = "חברים";
+"No members found" = "לא נמצאו חברים";
+"Invites" = "הזמנות";
+"Management" = "ניהול";
+"Only the list owner can manage members and invites." = "רק בעל הרשימה יכול לנהל חברים והזמנות.";
+"You" = "את/ה";
+"Make Editor" = "הפוך לעורך";
+"Make Viewer" = "הפוך לצופה";
+"Remove" = "הסר";
+"Revoke" = "בטל";
+
+"role_owner" = "בעלים";
+"role_editor" = "עורך";
+"role_viewer" = "צופה";
+"status_pending" = "ממתין";
+"status_accepted" = "אושר";
+"status_revoked" = "בוטל";
+
+"default_list_title" = "מצרכים";
+"Shoply list" = "רשימת Shoply";
+"Select a list before sending an invite." = "בחר רשימה לפני שליחת הזמנה.";
+"Please enter a valid email address." = "אנא הזן כתובת אימייל תקינה.";
+"Shared" = "משותף";

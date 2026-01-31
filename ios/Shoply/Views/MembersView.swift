@@ -97,12 +97,12 @@ private struct MemberRowView: View {
 
             Spacer()
 
-            Text(roleLabel(member.role))
-                .font(.caption)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(Color.black.opacity(0.08))
-                .cornerRadius(8)
+                Text(roleLabel(member.role))
+                    .font(.caption)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.black.opacity(0.08))
+                    .cornerRadius(8)
 
             if isOwner && !member.isCurrentUser {
                 Menu {
@@ -120,9 +120,9 @@ private struct MemberRowView: View {
 
     private func roleLabel(_ role: String) -> String {
         switch role {
-        case "owner": return "Owner"
-        case "editor": return "Editor"
-        default: return "Viewer"
+        case "owner": return NSLocalizedString("role_owner", comment: "")
+        case "editor": return NSLocalizedString("role_editor", comment: "")
+        default: return NSLocalizedString("role_viewer", comment: "")
         }
     }
 }
@@ -136,7 +136,7 @@ private struct InviteRowView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(invite.email)
                     .fontWeight(.semibold)
-                Text("\(roleLabel(invite.role)) • \(invite.status)")
+                Text("\(roleLabel(invite.role)) • \(statusLabel(invite.status))")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -154,9 +154,17 @@ private struct InviteRowView: View {
 
     private func roleLabel(_ role: String) -> String {
         switch role {
-        case "owner": return "Owner"
-        case "editor": return "Editor"
-        default: return "Viewer"
+        case "owner": return NSLocalizedString("role_owner", comment: "")
+        case "editor": return NSLocalizedString("role_editor", comment: "")
+        default: return NSLocalizedString("role_viewer", comment: "")
+        }
+    }
+
+    private func statusLabel(_ status: String) -> String {
+        switch status {
+        case "accepted": return NSLocalizedString("status_accepted", comment: "")
+        case "revoked": return NSLocalizedString("status_revoked", comment: "")
+        default: return NSLocalizedString("status_pending", comment: "")
         }
     }
 }

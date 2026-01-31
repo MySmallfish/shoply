@@ -24,7 +24,7 @@ struct AdjustQuantityView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(item.name)
                         .font(.system(size: 18, weight: .semibold))
-                    Text("Left to buy: \(item.quantity)")
+                    Text(String(format: NSLocalizedString("left_to_buy_format", comment: ""), item.quantity))
                         .font(.system(size: 14))
                         .foregroundColor(.secondary)
                 }

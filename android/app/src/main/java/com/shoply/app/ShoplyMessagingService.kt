@@ -28,7 +28,7 @@ class ShoplyMessagingService : FirebaseMessagingService() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 channelId,
-                "Invitations",
+                getString(R.string.invite_channel_name),
                 NotificationManager.IMPORTANCE_DEFAULT
             )
             manager.createNotificationChannel(channel)
@@ -46,7 +46,7 @@ class ShoplyMessagingService : FirebaseMessagingService() {
 
         val builder = NotificationCompat.Builder(this, channelId)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setContentTitle(title ?: "Shoply")
+            .setContentTitle(title ?: getString(R.string.invite_notification_title_default))
             .setContentText(body ?: "")
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
