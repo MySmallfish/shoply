@@ -119,6 +119,8 @@ struct MainListView: View {
             AdjustQuantityView(item: item) { delta in
                 listViewModel.adjustQuantity(item, delta: delta)
             }
+            .presentationDetents([.medium])
+            .presentationDragIndicator(.visible)
         }
         .confirmationDialog(
             "Merge lists?",
