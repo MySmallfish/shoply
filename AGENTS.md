@@ -89,6 +89,27 @@ xcrun simctl launch 42E8C2C9-8425-4F06-98C6-7C10561B863B com.shoply.app
 Active iPhone simulator used:
 - iPhone 17 Pro UDID: `42E8C2C9-8425-4F06-98C6-7C10561B863B`
 
+### iOS (Device - Auto Deploy)
+When the user requests iOS deploy (or says “yes, do it”), auto-run build + install + launch without asking again.
+Connected iPhone UDID:
+- `00008150-000D04523C84401C`
+
+Build:
+```
+xcodebuild -project ios/Shoply.xcodeproj \
+  -scheme Shoply \
+  -configuration Debug \
+  -destination 'generic/platform=iOS' \
+  -derivedDataPath ios/build/DerivedData \
+  -clonedSourcePackagesDirPath ios/build/SourcePackages \
+  build
+```
+Install + Launch:
+```
+xcrun devicectl device install app --device 00008150-000D04523C84401C ios/build/DerivedData/Build/Products/Debug-iphoneos/Shoply.app
+xcrun devicectl device process launch --device 00008150-000D04523C84401C il.co.simplevision.shoply
+```
+
 ### Android (Emulator)
 Android SDK path on this machine:
 - `/opt/homebrew/share/android-commandlinetools`
