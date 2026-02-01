@@ -95,7 +95,7 @@ Active iPhone simulator used:
 - iPhone 17 Pro UDID: `42E8C2C9-8425-4F06-98C6-7C10561B863B`
 
 ### iOS (Device - Auto Deploy)
-When the user requests iOS deploy (or says “yes, do it”), auto-run build + install + launch without asking again.
+Auto-run build + install + launch on every change without asking again (unless the user explicitly says to skip).
 Connected iPhone UDID:
 - `00008150-000D04523C84401C`
 
