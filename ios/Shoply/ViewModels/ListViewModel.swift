@@ -155,6 +155,29 @@ final class ListViewModel: ObservableObject {
         )
     }
 
+    func updateItemDetails(itemId: String, draft: ItemDetailsDraft) {
+        guard let listId = listId, let userId = userId else { return }
+        let name = draft.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { return }
+        let barcode = draft.barcode.trimmingCharacters(in: .whitespacesAndNewlines)
+        repository.updateItemDetails(
+            listId: listId,
+            itemId: itemId,
+            name: name,
+            barcode: barcode,
+            price: draft.priceValue,
+            description: draft.descriptionText,
+            icon: draft.icon
+        )
+        rememberItem(
+            name: name,
+            barcode: barcode.isEmpty ? nil : barcode,
+            price: draft.priceValue,
+            description: draft.descriptionText,
+            icon: draft.icon
+        )
+    }
+
     func applyScanPurchase(_ item: ShoppingItem, amount: Int) {
         guard let listId = listId else { return }
         if amount >= item.quantity {

@@ -18,6 +18,7 @@ struct MainListView: View {
     @State private var selectedSuggestion: CatalogItem?
     @State private var showDetails = false
     @State private var detailsDraft = ItemDetailsDraft()
+    @State private var detailsItemId: String?
     @State private var undoTask: Task<Void, Never>?
 
     var body: some View {
@@ -106,19 +107,38 @@ struct MainListView: View {
                 listViewModel.clearScan()
             }
         }
-        .sheet(isPresented: $showDetails) {
-            AddItemDetailsView(draft: detailsDraft, allowBarcodeEdit: detailsDraft.barcode.isEmpty) { draft in
-                addItemFromDraft(draft)
-                newItemName = ""
-                selectedSuggestion = nil
+        .sheet(isPresented: $showDetails, onDismiss: {
+            detailsItemId = nil
+        }) {
+            AddItemDetailsView(
+                draft: detailsDraft,
+                allowBarcodeEdit: detailsDraft.barcode.isEmpty,
+                title: detailsItemId == nil
+                    ? NSLocalizedString("Add Item", comment: "")
+                    : NSLocalizedString("Edit Item", comment: ""),
+                primaryTitle: detailsItemId == nil
+                    ? NSLocalizedString("Add", comment: "")
+                    : NSLocalizedString("Save", comment: "")
+            ) { draft in
+                if let itemId = detailsItemId {
+                    listViewModel.updateItemDetails(itemId: itemId, draft: draft)
+                } else {
+                    addItemFromDraft(draft)
+                    newItemName = ""
+                    selectedSuggestion = nil
+                }
+                detailsItemId = nil
             }
         }
         .sheet(item: $adjustItem, onDismiss: {
             listViewModel.clearScan()
         }) { item in
-            AdjustQuantityView(item: item) { delta in
+            AdjustQuantityView(item: item, onApply: { delta in
                 listViewModel.adjustQuantity(item, delta: delta)
-            }
+            }, onEditDetails: {
+                adjustItem = nil
+                openDetails(for: item)
+            })
             .presentationDetents([.medium])
             .presentationDragIndicator(.visible)
         }
@@ -331,6 +351,19 @@ struct MainListView: View {
             descriptionText: suggestion?.itemDescription ?? "",
             icon: suggestion?.icon ?? ""
         )
+        detailsItemId = nil
+        showDetails = true
+    }
+
+    private func openDetails(for item: ShoppingItem) {
+        detailsDraft = ItemDetailsDraft(
+            name: item.name,
+            barcode: item.barcode ?? "",
+            priceText: item.price.map { String($0) } ?? "",
+            descriptionText: item.description ?? "",
+            icon: item.icon ?? ""
+        )
+        detailsItemId = item.id
         showDetails = true
     }
 

@@ -27,6 +27,10 @@
 "Apply" = "Apply";
 "How much?" = "How much?";
 "left_to_buy_format" = "Left to buy: %d";
+"Mode" = "Mode";
+"Bought" = "Bought";
+"Need" = "Need";
+"Edit Item" = "Edit Item";
 
 "Item Details" = "Item Details";
 "Save" = "Save";

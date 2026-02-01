@@ -27,6 +27,10 @@
 "Apply" = "החל";
 "How much?" = "כמה?";
 "left_to_buy_format" = "נשאר לקנייה: %d";
+"Mode" = "מצב";
+"Bought" = "נקנה";
+"Need" = "צריך";
+"Edit Item" = "ערוך פריט";
 
 "Item Details" = "פרטי פריט";
 "Save" = "שמור";

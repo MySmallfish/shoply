@@ -25,22 +25,29 @@ struct AddScannedItemView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .principal) {
-                    Text("Add Item")
-                        .font(.headline)
-                        .frame(
-                            maxWidth: .infinity,
-                            alignment: layoutDirection == .rightToLeft ? .trailing : .leading
-                        )
+                    let title = NSLocalizedString("Add Item", comment: "")
+                    HStack {
+                        if layoutDirection == .rightToLeft {
+                            Spacer()
+                        }
+                        Text(title)
+                            .font(.headline)
+                        if layoutDirection == .leftToRight {
+                            Spacer()
+                        }
+                    }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Add") {
+                    Button(NSLocalizedString("Add", comment: "")) {
                         onAdd(draft)
                         dismiss()
                     }
                     .disabled(draft.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .buttonStyle(.borderedProminent)
+                    .tint(.primary)
                 }
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("Cancel") {
+                    Button(NSLocalizedString("Cancel", comment: "")) {
                         dismiss()
                     }
                 }

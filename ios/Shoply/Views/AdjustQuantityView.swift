@@ -3,43 +3,54 @@ import SwiftUI
 struct AdjustQuantityView: View {
     private let item: ShoppingItem
     private let onApply: (Int) -> Void
+    private let onEditDetails: () -> Void
 
     @State private var amount: Int
     @State private var mode: QuantityMode
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.layoutDirection) private var layoutDirection
 
-    init(item: ShoppingItem, onApply: @escaping (Int) -> Void) {
+    init(item: ShoppingItem, onApply: @escaping (Int) -> Void, onEditDetails: @escaping () -> Void) {
         self.item = item
         let defaultMode: QuantityMode = item.quantity <= 0 ? .need : .bought
         self._mode = State(initialValue: defaultMode)
         let startingAmount = defaultMode == .bought ? max(1, item.quantity) : 1
         self._amount = State(initialValue: startingAmount)
         self.onApply = onApply
+        self.onEditDetails = onEditDetails
     }
 
     var body: some View {
+        let alignment: HorizontalAlignment = layoutDirection == .rightToLeft ? .trailing : .leading
+        let title = NSLocalizedString("Update Item", comment: "")
         NavigationStack {
             VStack(spacing: 20) {
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: alignment, spacing: 6) {
                     Text(item.name)
                         .font(.system(size: 18, weight: .semibold))
                     Text(String(format: NSLocalizedString("left_to_buy_format", comment: ""), item.quantity))
                         .font(.system(size: 14))
                         .foregroundColor(.secondary)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(maxWidth: .infinity, alignment: layoutDirection == .rightToLeft ? .trailing : .leading)
 
-                Picker("Mode", selection: $mode) {
+                Picker(NSLocalizedString("Mode", comment: ""), selection: $mode) {
                     ForEach(QuantityMode.allCases) { selection in
                         Text(selection.title).tag(selection)
                     }
                 }
                 .pickerStyle(.segmented)
 
-                Text("How much?")
+                Button(NSLocalizedString("Edit Item", comment: "")) {
+                    onEditDetails()
+                }
+                .buttonStyle(.bordered)
+                .frame(maxWidth: .infinity, alignment: layoutDirection == .rightToLeft ? .trailing : .leading)
+
+                Text(NSLocalizedString("How much?", comment: ""))
                     .font(.system(size: 14, weight: .semibold))
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .frame(maxWidth: .infinity, alignment: layoutDirection == .rightToLeft ? .trailing : .leading)
 
                 HStack(spacing: 24) {
                     Button {
@@ -73,19 +84,33 @@ struct AdjustQuantityView: View {
                 Spacer()
             }
             .padding(20)
-            .navigationTitle("Update Item")
+            .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .principal) {
+                    HStack {
+                        if layoutDirection == .rightToLeft {
+                            Spacer()
+                        }
+                        Text(title)
+                            .font(.headline)
+                        if layoutDirection == .leftToRight {
+                            Spacer()
+                        }
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Apply") {
+                    Button(NSLocalizedString("Apply", comment: "")) {
                         let resolved = max(1, amount)
                         let delta = mode == .bought ? -resolved : resolved
                         onApply(delta)
                         dismiss()
                     }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.primary)
                 }
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("Cancel") {
+                    Button(NSLocalizedString("Cancel", comment: "")) {
                         dismiss()
                     }
                 }
@@ -103,9 +128,9 @@ private enum QuantityMode: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .bought:
-            return "Bought"
+            return NSLocalizedString("Bought", comment: "")
         case .need:
-            return "Need"
+            return NSLocalizedString("Need", comment: "")
         }
     }
 }

@@ -298,6 +298,56 @@ final class ListRepository {
         touchList(listId: listId)
     }
 
+    func updateItemDetails(
+        listId: String,
+        itemId: String,
+        name: String,
+        barcode: String,
+        price: Double?,
+        description: String?,
+        icon: String?
+    ) {
+        let itemRef = db.collection("lists").document(listId).collection("items").document(itemId)
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty else { return }
+
+        var updates: [String: Any] = [
+            "name": trimmedName,
+            "normalizedName": normalizedName(trimmedName),
+            "updatedAt": FieldValue.serverTimestamp()
+        ]
+
+        let trimmedBarcode = barcode.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmedBarcode.isEmpty {
+            updates["barcode"] = FieldValue.delete()
+        } else {
+            updates["barcode"] = trimmedBarcode
+        }
+
+        if let price = price {
+            updates["price"] = price
+        } else {
+            updates["price"] = FieldValue.delete()
+        }
+
+        if let description {
+            let trimmedDescription = description.trimmingCharacters(in: .whitespacesAndNewlines)
+            updates["description"] = trimmedDescription.isEmpty ? FieldValue.delete() : trimmedDescription
+        } else {
+            updates["description"] = FieldValue.delete()
+        }
+
+        if let icon {
+            let trimmedIcon = icon.trimmingCharacters(in: .whitespacesAndNewlines)
+            updates["icon"] = trimmedIcon.isEmpty ? FieldValue.delete() : trimmedIcon
+        } else {
+            updates["icon"] = FieldValue.delete()
+        }
+
+        itemRef.updateData(updates)
+        touchList(listId: listId)
+    }
+
     func toggleBought(listId: String, item: ShoppingItem, userId: String) {
         let itemRef = db.collection("lists").document(listId).collection("items").document(item.id)
         var updates: [String: Any] = [
