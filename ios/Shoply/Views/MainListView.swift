@@ -202,13 +202,13 @@ struct MainListView: View {
 
             HStack(spacing: 14) {
                 Button(action: { showMembers = true }) {
-                    Image(systemName: "person.2")
+                    headerIcon(systemName: "person.2")
                 }
                 Button(action: { showInvite = true }) {
-                    Image(systemName: "person.badge.plus")
+                    headerIcon(systemName: "person.badge.plus")
                 }
                 Button(action: { showScanner = true }) {
-                    Image(systemName: "barcode.viewfinder")
+                    headerIcon(systemName: "barcode.viewfinder")
                 }
                 Menu {
                     Button(pendingInvitesTitle) {
@@ -218,10 +218,9 @@ struct MainListView: View {
                         session.signOut()
                     }
                 } label: {
-                    Image(systemName: "ellipsis.circle")
+                    headerIcon(systemName: "ellipsis.circle")
                 }
             }
-            .font(.system(size: 16, weight: .semibold))
             .foregroundColor(.primary)
         }
         .padding(.horizontal, 16)
@@ -229,6 +228,13 @@ struct MainListView: View {
         .padding(.bottom, 10)
         .background(Color(.systemBackground))
         .overlay(Divider(), alignment: .bottom)
+    }
+
+    private func headerIcon(systemName: String) -> some View {
+        Image(systemName: systemName)
+            .font(.system(size: 20, weight: .semibold))
+            .frame(width: 38, height: 38)
+            .contentShape(Rectangle())
     }
 
     @ViewBuilder
