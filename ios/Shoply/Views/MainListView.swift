@@ -360,7 +360,7 @@ struct MainListView: View {
             name: item.name,
             barcode: item.barcode ?? "",
             priceText: item.price.map { String($0) } ?? "",
-            descriptionText: item.description ?? "",
+            descriptionText: item.itemDescription ?? "",
             icon: item.icon ?? ""
         )
         detailsItemId = item.id
