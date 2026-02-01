@@ -22,14 +22,14 @@ struct AddScannedItemView: View {
             }
             .navigationTitle("Add Item")
             .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
+                ToolbarItem(placement: .topBarTrailing) {
                     Button("Add") {
                         onAdd(draft)
                         dismiss()
                     }
                     .disabled(draft.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
-                ToolbarItem(placement: .cancellationAction) {
+                ToolbarItem(placement: .topBarLeading) {
                     Button("Cancel") {
                         dismiss()
                     }

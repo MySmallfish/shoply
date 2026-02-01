@@ -30,7 +30,7 @@ struct InviteView: View {
             }
             .navigationTitle("Invite")
             .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
+                ToolbarItem(placement: .topBarTrailing) {
                     Button("Send") {
                         let trimmed = email.trimmingCharacters(in: .whitespacesAndNewlines)
                         isSending = true
@@ -58,7 +58,7 @@ struct InviteView: View {
                             || email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                     )
                 }
-                ToolbarItem(placement: .cancellationAction) {
+                ToolbarItem(placement: .topBarLeading) {
                     Button("Cancel") {
                         dismiss()
                     }

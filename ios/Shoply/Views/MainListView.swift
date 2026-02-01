@@ -302,15 +302,22 @@ struct MainListView: View {
         let trimmed = newItemName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
         let suggestion = selectedSuggestion ?? listViewModel.matchingCatalogItem(for: trimmed)
-        listViewModel.addItem(
-            name: trimmed,
-            barcode: suggestion?.barcode,
-            price: suggestion?.price,
-            description: suggestion?.itemDescription,
-            icon: suggestion?.icon
-        )
-        newItemName = ""
-        selectedSuggestion = nil
+        let normalized = trimmed.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+        let hasListMatch = listViewModel.items.contains { $0.normalizedName == normalized }
+        if hasListMatch || suggestion != nil {
+            listViewModel.addItem(
+                name: trimmed,
+                barcode: suggestion?.barcode,
+                price: suggestion?.price,
+                description: suggestion?.itemDescription,
+                icon: suggestion?.icon
+            )
+            newItemName = ""
+            selectedSuggestion = nil
+        } else {
+            detailsDraft = ItemDetailsDraft(name: trimmed)
+            showDetails = true
+        }
     }
 
     private func openDetails() {

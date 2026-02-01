@@ -50,7 +50,7 @@ struct MembersView: View {
             }
             .navigationTitle("Members")
             .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
+                ToolbarItem(placement: .topBarTrailing) {
                     Button("Done") { dismiss() }
                 }
             }

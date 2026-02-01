@@ -18,7 +18,7 @@ struct JoinListView: View {
             }
             .navigationTitle("Join List")
             .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
+                ToolbarItem(placement: .topBarTrailing) {
                     Button("Join") {
                         if let token = extractToken(from: input) {
                             session.handleInviteToken(token)
@@ -27,7 +27,7 @@ struct JoinListView: View {
                     }
                     .disabled(extractToken(from: input) == nil)
                 }
-                ToolbarItem(placement: .cancellationAction) {
+                ToolbarItem(placement: .topBarLeading) {
                     Button("Cancel") {
                         dismiss()
                     }

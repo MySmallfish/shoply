@@ -18,16 +18,16 @@ struct AddItemDetailsView: View {
             Form {
                 ItemDetailsForm(draft: $draft, allowBarcodeEdit: allowBarcodeEdit)
             }
-            .navigationTitle("Item Details")
+            .navigationTitle("Add Item")
             .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Add") {
                         onSave(draft)
                         dismiss()
                     }
                     .disabled(draft.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
-                ToolbarItem(placement: .cancellationAction) {
+                ToolbarItem(placement: .topBarLeading) {
                     Button("Cancel") {
                         dismiss()
                     }

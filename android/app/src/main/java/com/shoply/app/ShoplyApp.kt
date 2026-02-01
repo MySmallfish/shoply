@@ -334,15 +334,23 @@ fun ListScreen(viewModel: MainViewModel) {
                         val trimmed = newItemName.trim()
                         if (trimmed.isNotEmpty()) {
                             val match = selectedSuggestion ?: viewModel.matchingCatalogItem(trimmed)
-                            viewModel.addItem(
-                                trimmed,
-                                match?.barcode,
-                                match?.price,
-                                match?.description,
-                                match?.icon
-                            )
-                            newItemName = ""
-                            selectedSuggestion = null
+                            val normalized = trimmed.lowercase()
+                            val hasListMatch = items.any { it.normalizedName == normalized }
+                            if (hasListMatch || match != null) {
+                                viewModel.addItem(
+                                    trimmed,
+                                    match?.barcode,
+                                    match?.price,
+                                    match?.description,
+                                    match?.icon
+                                )
+                                newItemName = ""
+                                selectedSuggestion = null
+                            } else {
+                                scannedDraft = ItemDetailsDraft(name = trimmed)
+                                scanCode = ""
+                                showAddFromScan = true
+                            }
                         }
                     },
                     onDetails = {
@@ -1347,11 +1355,13 @@ private fun AddScannedItemDialog(
         title = { Text(stringResource(R.string.add_item_title)) },
         text = {
             Column {
-                Text(
-                    stringResource(R.string.scanned_format, barcode),
-                    fontWeight = FontWeight.SemiBold
-                )
-                Spacer(modifier = Modifier.height(8.dp))
+                if (barcode.isNotBlank()) {
+                    Text(
+                        stringResource(R.string.scanned_format, barcode),
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
                 TextField(
                     value = draft.name,
                     onValueChange = { onDraftChange(draft.copy(name = it)) },

@@ -76,7 +76,7 @@ struct AdjustQuantityView: View {
             .navigationTitle("Update Item")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
+                ToolbarItem(placement: .topBarTrailing) {
                     Button("Apply") {
                         let resolved = max(1, amount)
                         let delta = mode == .bought ? -resolved : resolved
@@ -84,7 +84,7 @@ struct AdjustQuantityView: View {
                         dismiss()
                     }
                 }
-                ToolbarItem(placement: .cancellationAction) {
+                ToolbarItem(placement: .topBarLeading) {
                     Button("Cancel") {
                         dismiss()
                     }

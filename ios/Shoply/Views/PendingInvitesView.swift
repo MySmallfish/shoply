@@ -31,7 +31,7 @@ struct PendingInvitesView: View {
                 Text(session.inviteActionError ?? "")
             }
             .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
+                ToolbarItem(placement: .topBarTrailing) {
                     Button("Done") { dismiss() }
                 }
             }
