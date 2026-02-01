@@ -6,6 +6,7 @@ struct AddItemDetailsView: View {
     let onSave: (ItemDetailsDraft) -> Void
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.layoutDirection) private var layoutDirection
 
     init(draft: ItemDetailsDraft, allowBarcodeEdit: Bool, onSave: @escaping (ItemDetailsDraft) -> Void) {
         self._draft = State(initialValue: draft)
@@ -18,8 +19,17 @@ struct AddItemDetailsView: View {
             Form {
                 ItemDetailsForm(draft: $draft, allowBarcodeEdit: allowBarcodeEdit)
             }
-            .navigationTitle("Add Item")
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text("Add Item")
+                        .font(.headline)
+                        .frame(
+                            maxWidth: .infinity,
+                            alignment: layoutDirection == .rightToLeft ? .trailing : .leading
+                        )
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Add") {
                         onSave(draft)

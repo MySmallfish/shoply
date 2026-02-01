@@ -39,6 +39,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Email
@@ -86,13 +87,16 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.material3.LocalTextStyle
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -1206,12 +1210,11 @@ private fun ItemDetailsDialog(
                     textStyle = textStyle
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                TextField(
+                BarcodeField(
                     value = draft.barcode,
                     onValueChange = { onDraftChange(draft.copy(barcode = it)) },
-                    placeholder = { PlaceholderText(stringResource(R.string.barcode), textAlign) },
-                    textStyle = textStyle,
-                    enabled = allowBarcodeEdit
+                    textAlign = textAlign,
+                    initiallyEditable = allowBarcodeEdit
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 TextField(
@@ -1362,6 +1365,13 @@ private fun AddScannedItemDialog(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                 }
+                BarcodeField(
+                    value = draft.barcode,
+                    onValueChange = { onDraftChange(draft.copy(barcode = it)) },
+                    textAlign = textAlign,
+                    initiallyEditable = barcode.isBlank()
+                )
+                Spacer(modifier = Modifier.height(8.dp))
                 TextField(
                     value = draft.name,
                     onValueChange = { onDraftChange(draft.copy(name = it)) },
@@ -1407,6 +1417,40 @@ private fun AddScannedItemDialog(
             }
         }
     )
+}
+
+@Composable
+private fun BarcodeField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    textAlign: TextAlign,
+    initiallyEditable: Boolean
+) {
+    var isEditable by remember(initiallyEditable) { mutableStateOf(initiallyEditable) }
+    val clipboard = LocalClipboardManager.current
+    val textStyle = LocalTextStyle.current.copy(textAlign = textAlign)
+
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        TextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier = Modifier.weight(1f),
+            placeholder = { PlaceholderText(stringResource(R.string.barcode), textAlign) },
+            textStyle = textStyle,
+            enabled = isEditable,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+        )
+        if (value.isNotBlank()) {
+            IconButton(onClick = { clipboard.setText(AnnotatedString(value)) }) {
+                Icon(imageVector = Icons.Default.ContentCopy, contentDescription = stringResource(R.string.copy))
+            }
+        }
+        if (!isEditable) {
+            TextButton(onClick = { isEditable = true }) {
+                Text(stringResource(R.string.edit))
+            }
+        }
+    }
 }
 
 @Composable

@@ -65,6 +65,8 @@
     <string name="item_details">פרטי פריט</string>
     <string name="name">שם</string>
     <string name="barcode">ברקוד</string>
+    <string name="copy">העתק</string>
+    <string name="edit">ערוך</string>
     <string name="price">מחיר</string>
     <string name="icon">אייקון</string>
     <string name="camera">מצלמה</string>

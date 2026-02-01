@@ -6,6 +6,7 @@ struct AddScannedItemView: View {
     let onAdd: (ItemDetailsDraft) -> Void
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.layoutDirection) private var layoutDirection
 
     init(barcode: String, draft: ItemDetailsDraft, onAdd: @escaping (ItemDetailsDraft) -> Void) {
         self.barcode = barcode
@@ -20,8 +21,17 @@ struct AddScannedItemView: View {
             Form {
                 ItemDetailsForm(draft: $draft, allowBarcodeEdit: false)
             }
-            .navigationTitle("Add Item")
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text("Add Item")
+                        .font(.headline)
+                        .frame(
+                            maxWidth: .infinity,
+                            alignment: layoutDirection == .rightToLeft ? .trailing : .leading
+                        )
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Add") {
                         onAdd(draft)

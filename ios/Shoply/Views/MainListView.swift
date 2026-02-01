@@ -316,6 +316,7 @@ struct MainListView: View {
             selectedSuggestion = nil
         } else {
             detailsDraft = ItemDetailsDraft(name: trimmed)
+            selectedSuggestion = nil
             showDetails = true
         }
     }

@@ -1,5 +1,6 @@
 import PhotosUI
 import SwiftUI
+import UIKit
 
 struct ItemDetailsForm: View {
     @Binding var draft: ItemDetailsDraft
@@ -7,20 +8,42 @@ struct ItemDetailsForm: View {
     @Environment(\.layoutDirection) private var layoutDirection
     @State private var photoSelection: PhotosPickerItem?
     @State private var showCameraPicker = false
+    @State private var isEditingBarcode = false
 
     private let stockIcons = ["🧺", "🥛", "🍞", "🧀", "🍎", "🧴"]
 
     var body: some View {
         let alignment: TextAlignment = layoutDirection == .rightToLeft ? .trailing : .leading
+        let canEditBarcode = allowBarcodeEdit || isEditingBarcode
 
         Section("Item") {
             TextField("Name", text: $draft.name)
                 .multilineTextAlignment(alignment)
-            TextField("Barcode", text: $draft.barcode)
-                .keyboardType(.numberPad)
-                .disabled(!allowBarcodeEdit)
-                .foregroundColor(allowBarcodeEdit ? .primary : .secondary)
-                .multilineTextAlignment(alignment)
+            HStack(spacing: 8) {
+                TextField("Barcode", text: $draft.barcode)
+                    .keyboardType(.numberPad)
+                    .disabled(!canEditBarcode)
+                    .foregroundColor(canEditBarcode ? .primary : .secondary)
+                    .multilineTextAlignment(alignment)
+
+                if !draft.barcode.isEmpty {
+                    Button {
+                        UIPasteboard.general.string = draft.barcode
+                    } label: {
+                        Image(systemName: "doc.on.doc")
+                    }
+                    .accessibilityLabel(NSLocalizedString("Copy", comment: ""))
+                }
+
+                if !allowBarcodeEdit && !isEditingBarcode {
+                    Button {
+                        isEditingBarcode = true
+                    } label: {
+                        Image(systemName: "pencil")
+                    }
+                    .accessibilityLabel(NSLocalizedString("Edit", comment: ""))
+                }
+            }
         }
 
         Section("Details") {
