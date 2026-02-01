@@ -328,7 +328,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
         val invite = _pendingInvites.value.firstOrNull { it.token == trimmed }
         if (invite != null) {
-            pendingInviteContext = PendingInviteContext(invite)
+            pendingInviteContext = PendingInviteContext(invite, text(R.string.shared_suffix))
         }
         val updates = hashMapOf(
             "status" to "accepted",
@@ -707,20 +707,22 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val listId: String,
         val listTitle: String,
         val creatorName: String,
-        val creatorEmail: String
+        val creatorEmail: String,
+        val sharedSuffix: String
     ) {
-        constructor(invite: PendingInvite) : this(
+        constructor(invite: PendingInvite, sharedSuffix: String) : this(
             listId = invite.listId,
             listTitle = invite.listTitle,
             creatorName = invite.creatorName,
-            creatorEmail = invite.creatorEmail
+            creatorEmail = invite.creatorEmail,
+            sharedSuffix = sharedSuffix
         )
 
         fun creatorDisplayName(): String {
             return when {
                 creatorName.isNotBlank() -> creatorName
                 creatorEmail.isNotBlank() -> creatorEmail
-                else -> text(R.string.shared_suffix)
+                else -> sharedSuffix
             }
         }
     }

@@ -19,6 +19,7 @@ data class ShoppingItem(
     val price: Double?,
     val description: String?,
     val icon: String?,
+    val quantity: Int,
     val isBought: Boolean,
     val createdAt: Long,
     val createdBy: String,
