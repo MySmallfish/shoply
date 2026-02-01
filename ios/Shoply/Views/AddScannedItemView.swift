@@ -2,17 +2,15 @@ import SwiftUI
 
 struct AddScannedItemView: View {
     let barcode: String
-    @State private var draft: ItemDetailsDraft
+    @Binding var draft: ItemDetailsDraft
     let onAdd: (ItemDetailsDraft) -> Void
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.layoutDirection) private var layoutDirection
 
-    init(barcode: String, draft: ItemDetailsDraft, onAdd: @escaping (ItemDetailsDraft) -> Void) {
+    init(barcode: String, draft: Binding<ItemDetailsDraft>, onAdd: @escaping (ItemDetailsDraft) -> Void) {
         self.barcode = barcode
-        var seeded = draft
-        seeded.barcode = barcode
-        self._draft = State(initialValue: seeded)
+        self._draft = draft
         self.onAdd = onAdd
     }
 

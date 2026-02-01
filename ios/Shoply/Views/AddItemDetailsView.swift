@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct AddItemDetailsView: View {
-    @State private var draft: ItemDetailsDraft
+    @Binding var draft: ItemDetailsDraft
     private let allowBarcodeEdit: Bool
     private let title: String
     private let primaryTitle: String
@@ -11,13 +11,13 @@ struct AddItemDetailsView: View {
     @Environment(\.layoutDirection) private var layoutDirection
 
     init(
-        draft: ItemDetailsDraft,
+        draft: Binding<ItemDetailsDraft>,
         allowBarcodeEdit: Bool,
         title: String = NSLocalizedString("Add Item", comment: ""),
         primaryTitle: String = NSLocalizedString("Add", comment: ""),
         onSave: @escaping (ItemDetailsDraft) -> Void
     ) {
-        self._draft = State(initialValue: draft)
+        self._draft = draft
         self.allowBarcodeEdit = allowBarcodeEdit
         self.title = title
         self.primaryTitle = primaryTitle

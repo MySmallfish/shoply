@@ -7,18 +7,19 @@ struct ItemDetailsForm: View {
     @Binding var draft: ItemDetailsDraft
     let allowBarcodeEdit: Bool
     @Environment(\.layoutDirection) private var layoutDirection
-    @State private var showCameraPicker = false
-    @State private var showLibraryPicker = false
     @State private var isEditingBarcode = false
-    @State private var showCameraPermissionAlert = false
-    @State private var showLibraryPermissionAlert = false
-
-    private let stockIcons = ["🧺", "🥛", "🍞", "🧀", "🍎", "🧴"]
 
     var body: some View {
         let alignment: TextAlignment = layoutDirection == .rightToLeft ? .trailing : .leading
         let canEditBarcode = allowBarcodeEdit || isEditingBarcode
 
+        itemSection(alignment: alignment, canEditBarcode: canEditBarcode)
+        detailsSection(alignment: alignment)
+        IconPickerSection(icon: $draft.icon)
+    }
+
+    @ViewBuilder
+    private func itemSection(alignment: TextAlignment, canEditBarcode: Bool) -> some View {
         Section("Item") {
             TextField("Name", text: $draft.name)
                 .multilineTextAlignment(alignment)
@@ -48,7 +49,10 @@ struct ItemDetailsForm: View {
                 }
             }
         }
+    }
 
+    @ViewBuilder
+    private func detailsSection(alignment: TextAlignment) -> some View {
         Section("Details") {
             TextField("Price", text: $draft.priceText)
                 .keyboardType(.decimalPad)
@@ -56,99 +60,135 @@ struct ItemDetailsForm: View {
             TextField("Description", text: $draft.descriptionText, axis: .vertical)
                 .multilineTextAlignment(alignment)
         }
+    }
+}
 
+private struct IconPickerSection: View {
+    @Binding var icon: String
+    @State private var permissionAlert: PermissionAlert?
+
+    private let stockIcons = ["🧺", "🥛", "🍞", "🧀", "🍎", "🧴"]
+
+    var body: some View {
+        iconContent
+            .alert(item: $permissionAlert) { alert in
+                Alert(
+                    title: Text(alert.title),
+                    message: Text(alert.message),
+                    primaryButton: .default(Text(NSLocalizedString("Open Settings", comment: "")), action: {
+                        openSettings()
+                    }),
+                    secondaryButton: .cancel(Text(NSLocalizedString("Cancel", comment: "")))
+                )
+            }
+    }
+
+    private var iconContent: some View {
         Section("Icon") {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
-                    ForEach(stockIcons, id: \.self) { icon in
-                        Button {
-                            draft.icon = icon
-                        } label: {
-                            Text(icon)
-                                .font(.system(size: 22))
-                                .frame(width: 36, height: 36)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                        .fill(Color(.secondarySystemBackground))
-                                )
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-                .padding(.vertical, 4)
-            }
+            StockIconsRow(stockIcons: stockIcons, icon: $icon)
+            IconActionRow(icon: $icon, onCameraTap: handleCameraTap, onLibraryTap: handleLibraryTap)
 
-            HStack(spacing: 12) {
-                if UIImagePickerController.isSourceTypeAvailable(.camera) {
-                    Button(action: handleCameraTap) {
-                        Label("Camera", systemImage: "camera")
-                    }
-                    .buttonStyle(.borderless)
-                }
-
-                if UIImagePickerController.isSourceTypeAvailable(.photoLibrary) {
-                    Button(action: handleLibraryTap) {
-                        Label("Library", systemImage: "photo")
-                    }
-                    .buttonStyle(.borderless)
-                }
-
-                Spacer()
-
-                if !draft.icon.isEmpty {
-                    Button("Remove Icon") {
-                        draft.icon = ""
-                    }
-                    .foregroundColor(.secondary)
-                    .buttonStyle(.borderless)
-                }
-            }
-
-            if !draft.icon.isEmpty {
-                ItemIconView(icon: draft.icon, size: 48)
+            if !icon.isEmpty {
+                ItemIconView(icon: icon, size: 48)
                     .padding(.top, 4)
             }
         }
-        .sheet(isPresented: $showCameraPicker) {
-            ImagePicker(sourceType: .camera) { image in
-                if let encoded = encodeImage(image) {
-                    draft.icon = encoded
+    }
+
+    private func handleCameraTap() {
+        let status = AVCaptureDevice.authorizationStatus(for: .video)
+        switch status {
+        case .authorized:
+            presentPicker(source: .camera)
+        case .notDetermined:
+            AVCaptureDevice.requestAccess(for: .video) { granted in
+                DispatchQueue.main.async {
+                    if granted {
+                        presentPicker(source: .camera)
+                    } else {
+                        permissionAlert = .camera
+                    }
                 }
             }
-        }
-        .sheet(isPresented: $showLibraryPicker) {
-            ImagePicker(sourceType: .photoLibrary) { image in
-                if let encoded = encodeImage(image) {
-                    draft.icon = encoded
-                }
-            }
-        }
-        .alert(NSLocalizedString("Camera Access", comment: ""), isPresented: $showCameraPermissionAlert) {
-            Button(NSLocalizedString("Open Settings", comment: "")) {
-                openSettings()
-            }
-            Button(NSLocalizedString("Cancel", comment: ""), role: .cancel) {}
-        } message: {
-            Text(NSLocalizedString("Camera access is required to take item photos.", comment: ""))
-        }
-        .alert(NSLocalizedString("Photo Access", comment: ""), isPresented: $showLibraryPermissionAlert) {
-            Button(NSLocalizedString("Open Settings", comment: "")) {
-                openSettings()
-            }
-            Button(NSLocalizedString("Cancel", comment: ""), role: .cancel) {}
-        } message: {
-            Text(NSLocalizedString("Photo library access is required to choose an item image.", comment: ""))
+        default:
+            permissionAlert = .camera
         }
     }
 
-    private func encodeImage(_ image: UIImage) -> String? {
+    private func handleLibraryTap() {
+        let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+        switch status {
+        case .authorized, .limited:
+            presentPicker(source: .photoLibrary)
+        case .notDetermined:
+            PHPhotoLibrary.requestAuthorization(for: .readWrite) { newStatus in
+                DispatchQueue.main.async {
+                    if newStatus == .authorized || newStatus == .limited {
+                        presentPicker(source: .photoLibrary)
+                    } else {
+                        permissionAlert = .library
+                    }
+                }
+            }
+        default:
+            permissionAlert = .library
+        }
+    }
+
+    private func openSettings() {
+        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+        UIApplication.shared.open(url)
+    }
+
+    private func presentPicker(source: UIImagePickerController.SourceType) {
+        ImagePickerPresenter.shared.present(sourceType: source) { image in
+            guard let image else { return }
+            if let encoded = ItemIconEncoding.encode(image) {
+                icon = encoded
+            }
+        }
+    }
+}
+
+private enum PermissionAlert: Identifiable {
+    case camera
+    case library
+
+    var id: Int {
+        switch self {
+        case .camera: return 0
+        case .library: return 1
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .camera:
+            return NSLocalizedString("Camera Access", comment: "")
+        case .library:
+            return NSLocalizedString("Photo Access", comment: "")
+        }
+    }
+
+    var message: String {
+        switch self {
+        case .camera:
+            return NSLocalizedString("Camera access is required to take item photos.", comment: "")
+        case .library:
+            return NSLocalizedString("Photo library access is required to choose an item image.", comment: "")
+        }
+    }
+}
+
+enum ItemIconEncoding {
+    static func encode(_ image: UIImage) -> String? {
         let maxDimension: CGFloat = 256
         let resized = resizeImage(image, maxDimension: maxDimension)
         guard let data = resized.jpegData(compressionQuality: 0.8) else { return nil }
         return "img:" + data.base64EncodedString()
     }
 
-    private func resizeImage(_ image: UIImage, maxDimension: CGFloat) -> UIImage {
+    private static func resizeImage(_ image: UIImage, maxDimension: CGFloat) -> UIImage {
         let size = image.size
         let maxSide = max(size.width, size.height)
         guard maxSide > maxDimension else { return image }
@@ -159,93 +199,129 @@ struct ItemDetailsForm: View {
             image.draw(in: CGRect(origin: .zero, size: newSize))
         }
     }
+}
 
-    private func handleCameraTap() {
-        switch AVCaptureDevice.authorizationStatus(for: .video) {
-        case .authorized:
-            showCameraPicker = true
-        case .notDetermined:
-            AVCaptureDevice.requestAccess(for: .video) { granted in
-                DispatchQueue.main.async {
-                    if granted {
-                        showCameraPicker = true
-                    } else {
-                        showCameraPermissionAlert = true
-                    }
-                }
+final class ImagePickerPresenter: NSObject {
+    static let shared = ImagePickerPresenter()
+
+    private var onImage: ((UIImage?) -> Void)?
+    private var isPresenting = false
+
+    func present(sourceType: UIImagePickerController.SourceType, onImage: @escaping (UIImage?) -> Void) {
+        DispatchQueue.main.async {
+            guard !self.isPresenting else {
+                return
             }
-        default:
-            showCameraPermissionAlert = true
+            guard let topController = self.topViewController() else {
+                return
+            }
+            self.isPresenting = true
+            self.onImage = onImage
+
+            let picker = UIImagePickerController()
+            picker.sourceType = sourceType
+            picker.mediaTypes = ["public.image"]
+            picker.delegate = self
+            topController.present(picker, animated: true)
         }
     }
 
-    private func handleLibraryTap() {
-        let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
-        switch status {
-        case .authorized, .limited:
-            showLibraryPicker = true
-        case .notDetermined:
-            PHPhotoLibrary.requestAuthorization(for: .readWrite) { newStatus in
-                DispatchQueue.main.async {
-                    if newStatus == .authorized || newStatus == .limited {
-                        showLibraryPicker = true
-                    } else {
-                        showLibraryPermissionAlert = true
-                    }
-                }
-            }
-        default:
-            showLibraryPermissionAlert = true
-        }
+    private func finish(with image: UIImage?, picker: UIImagePickerController) {
+        onImage?(image)
+        onImage = nil
+        isPresenting = false
+        picker.dismiss(animated: true)
     }
 
-    private func openSettings() {
-        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
-        UIApplication.shared.open(url)
+    private func topViewController() -> UIViewController? {
+        let scenes = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+        let keyWindow = scenes
+            .flatMap { $0.windows }
+            .first { $0.isKeyWindow }
+        var controller = keyWindow?.rootViewController
+        while let presented = controller?.presentedViewController {
+            controller = presented
+        }
+        return controller
     }
 }
 
-private struct ImagePicker: UIViewControllerRepresentable {
-    let sourceType: UIImagePickerController.SourceType
-    let onImage: (UIImage) -> Void
-
-    @Environment(\.dismiss) private var dismiss
-
-    func makeUIViewController(context: Context) -> UIImagePickerController {
-        let picker = UIImagePickerController()
-        picker.sourceType = sourceType
-        picker.mediaTypes = ["public.image"]
-        picker.delegate = context.coordinator
-        return picker
-    }
-
-    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(onImage: onImage, dismiss: dismiss)
-    }
-
-    final class Coordinator: NSObject, UINavigationControllerDelegate, UIImagePickerControllerDelegate {
-        let onImage: (UIImage) -> Void
-        let dismiss: DismissAction
-
-        init(onImage: @escaping (UIImage) -> Void, dismiss: DismissAction) {
-            self.onImage = onImage
-            self.dismiss = dismiss
+extension ImagePickerPresenter: UINavigationControllerDelegate, UIImagePickerControllerDelegate {
+    func imagePickerController(
+        _ picker: UIImagePickerController,
+        didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]
+    ) {
+        if let image = info[.originalImage] as? UIImage {
+            finish(with: image, picker: picker)
+        } else {
+            finish(with: nil, picker: picker)
         }
+    }
 
-        func imagePickerController(
-            _ picker: UIImagePickerController,
-            didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]
-        ) {
-            if let image = info[.originalImage] as? UIImage {
-                onImage(image)
+    func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+        finish(with: nil, picker: picker)
+    }
+}
+
+
+private struct StockIconsRow: View {
+    let stockIcons: [String]
+    @Binding var icon: String
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 10) {
+                ForEach(stockIcons, id: \.self) { iconValue in
+                    Button {
+                        icon = iconValue
+                    } label: {
+                        Text(iconValue)
+                            .font(.system(size: 22))
+                            .frame(width: 36, height: 36)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                    .fill(Color(.secondarySystemBackground))
+                            )
+                    }
+                    .buttonStyle(.plain)
+                }
             }
-            dismiss()
+            .padding(.vertical, 4)
         }
+    }
+}
 
-        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
-            dismiss()
+private struct IconActionRow: View {
+    @Binding var icon: String
+    let onCameraTap: () -> Void
+    let onLibraryTap: () -> Void
+
+    var body: some View {
+        HStack(spacing: 12) {
+            if UIImagePickerController.isSourceTypeAvailable(.camera) {
+                Button(action: onCameraTap) {
+                    Label("Camera", systemImage: "camera")
+                }
+                .buttonStyle(.borderless)
+            }
+
+            if UIImagePickerController.isSourceTypeAvailable(.photoLibrary) {
+                Button(action: onLibraryTap) {
+                    Label("Library", systemImage: "photo")
+                }
+                .buttonStyle(.borderless)
+            }
+
+            Spacer()
+
+            if !icon.isEmpty {
+                Button("Remove Icon") {
+                    icon = ""
+                }
+                .foregroundColor(.secondary)
+                .buttonStyle(.borderless)
+            }
         }
     }
 }

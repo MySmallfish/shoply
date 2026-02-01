@@ -102,7 +102,7 @@ struct MainListView: View {
         .sheet(isPresented: $showAddFromScan, onDismiss: {
             listViewModel.clearScan()
         }) {
-            AddScannedItemView(barcode: scannedBarcode, draft: scannedDraft) { draft in
+            AddScannedItemView(barcode: scannedBarcode, draft: $scannedDraft) { draft in
                 addItemFromDraft(draft)
                 listViewModel.clearScan()
             }
@@ -111,7 +111,7 @@ struct MainListView: View {
             detailsItemId = nil
         }) {
             AddItemDetailsView(
-                draft: detailsDraft,
+                draft: $detailsDraft,
                 allowBarcodeEdit: detailsDraft.barcode.isEmpty,
                 title: detailsItemId == nil
                     ? NSLocalizedString("Add Item", comment: "")
