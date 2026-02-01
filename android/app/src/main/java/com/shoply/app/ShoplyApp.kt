@@ -8,10 +8,10 @@ import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
+import android.provider.MediaStore
 import android.util.Base64
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -1472,8 +1472,10 @@ private fun IconPicker(
     }
 
     val libraryLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia()
-    ) { uri ->
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode != Activity.RESULT_OK) return@rememberLauncherForActivityResult
+        val uri = result.data?.data
         uri?.let { loadBitmap(context, it) }?.let { encodeIconBitmap(it) }?.let(onIconChange)
     }
 
@@ -1530,9 +1532,11 @@ private fun IconPicker(
             Spacer(modifier = Modifier.width(8.dp))
             OutlinedButton(
                 onClick = {
-                    libraryLauncher.launch(
-                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                    val intent = Intent(
+                        Intent.ACTION_PICK,
+                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI
                     )
+                    libraryLauncher.launch(intent)
                 }
             ) {
                 Icon(imageVector = Icons.Default.PhotoLibrary, contentDescription = null)

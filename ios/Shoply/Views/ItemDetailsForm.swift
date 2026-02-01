@@ -1,4 +1,3 @@
-import PhotosUI
 import SwiftUI
 import UIKit
 
@@ -6,8 +5,8 @@ struct ItemDetailsForm: View {
     @Binding var draft: ItemDetailsDraft
     let allowBarcodeEdit: Bool
     @Environment(\.layoutDirection) private var layoutDirection
-    @State private var photoSelection: PhotosPickerItem?
     @State private var showCameraPicker = false
+    @State private var showLibraryPicker = false
     @State private var isEditingBarcode = false
 
     private let stockIcons = ["🧺", "🥛", "🍞", "🧀", "🍎", "🧴"]
@@ -84,8 +83,12 @@ struct ItemDetailsForm: View {
                     }
                 }
 
-                PhotosPicker(selection: $photoSelection, matching: .images) {
-                    Label("Library", systemImage: "photo")
+                if UIImagePickerController.isSourceTypeAvailable(.photoLibrary) {
+                    Button {
+                        showLibraryPicker = true
+                    } label: {
+                        Label("Library", systemImage: "photo")
+                    }
                 }
 
                 Spacer()
@@ -103,20 +106,15 @@ struct ItemDetailsForm: View {
                     .padding(.top, 4)
             }
         }
-        .onChange(of: photoSelection) { newItem in
-            guard let newItem else { return }
-            Task {
-                if let data = try? await newItem.loadTransferable(type: Data.self),
-                   let image = UIImage(data: data),
-                   let encoded = encodeImage(image) {
-                    await MainActor.run {
-                        draft.icon = encoded
-                    }
+        .sheet(isPresented: $showCameraPicker) {
+            ImagePicker(sourceType: .camera) { image in
+                if let encoded = encodeImage(image) {
+                    draft.icon = encoded
                 }
             }
         }
-        .sheet(isPresented: $showCameraPicker) {
-            CameraPicker { image in
+        .sheet(isPresented: $showLibraryPicker) {
+            ImagePicker(sourceType: .photoLibrary) { image in
                 if let encoded = encodeImage(image) {
                     draft.icon = encoded
                 }
@@ -144,14 +142,16 @@ struct ItemDetailsForm: View {
     }
 }
 
-private struct CameraPicker: UIViewControllerRepresentable {
+private struct ImagePicker: UIViewControllerRepresentable {
+    let sourceType: UIImagePickerController.SourceType
     let onImage: (UIImage) -> Void
 
     @Environment(\.dismiss) private var dismiss
 
     func makeUIViewController(context: Context) -> UIImagePickerController {
         let picker = UIImagePickerController()
-        picker.sourceType = .camera
+        picker.sourceType = sourceType
+        picker.mediaTypes = ["public.image"]
         picker.delegate = context.coordinator
         return picker
     }
