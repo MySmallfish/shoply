@@ -1,3 +1,5 @@
+import AVFoundation
+import Photos
 import SwiftUI
 import UIKit
 
@@ -8,6 +10,8 @@ struct ItemDetailsForm: View {
     @State private var showCameraPicker = false
     @State private var showLibraryPicker = false
     @State private var isEditingBarcode = false
+    @State private var showCameraPermissionAlert = false
+    @State private var showLibraryPermissionAlert = false
 
     private let stockIcons = ["🧺", "🥛", "🍞", "🧀", "🍎", "🧴"]
 
@@ -76,19 +80,17 @@ struct ItemDetailsForm: View {
 
             HStack(spacing: 12) {
                 if UIImagePickerController.isSourceTypeAvailable(.camera) {
-                    Button {
-                        showCameraPicker = true
-                    } label: {
+                    Button(action: handleCameraTap) {
                         Label("Camera", systemImage: "camera")
                     }
+                    .buttonStyle(.borderless)
                 }
 
                 if UIImagePickerController.isSourceTypeAvailable(.photoLibrary) {
-                    Button {
-                        showLibraryPicker = true
-                    } label: {
+                    Button(action: handleLibraryTap) {
                         Label("Library", systemImage: "photo")
                     }
+                    .buttonStyle(.borderless)
                 }
 
                 Spacer()
@@ -98,6 +100,7 @@ struct ItemDetailsForm: View {
                         draft.icon = ""
                     }
                     .foregroundColor(.secondary)
+                    .buttonStyle(.borderless)
                 }
             }
 
@@ -120,6 +123,22 @@ struct ItemDetailsForm: View {
                 }
             }
         }
+        .alert(NSLocalizedString("Camera Access", comment: ""), isPresented: $showCameraPermissionAlert) {
+            Button(NSLocalizedString("Open Settings", comment: "")) {
+                openSettings()
+            }
+            Button(NSLocalizedString("Cancel", comment: ""), role: .cancel) {}
+        } message: {
+            Text(NSLocalizedString("Camera access is required to take item photos.", comment: ""))
+        }
+        .alert(NSLocalizedString("Photo Access", comment: ""), isPresented: $showLibraryPermissionAlert) {
+            Button(NSLocalizedString("Open Settings", comment: "")) {
+                openSettings()
+            }
+            Button(NSLocalizedString("Cancel", comment: ""), role: .cancel) {}
+        } message: {
+            Text(NSLocalizedString("Photo library access is required to choose an item image.", comment: ""))
+        }
     }
 
     private func encodeImage(_ image: UIImage) -> String? {
@@ -139,6 +158,50 @@ struct ItemDetailsForm: View {
         return renderer.image { _ in
             image.draw(in: CGRect(origin: .zero, size: newSize))
         }
+    }
+
+    private func handleCameraTap() {
+        switch AVCaptureDevice.authorizationStatus(for: .video) {
+        case .authorized:
+            showCameraPicker = true
+        case .notDetermined:
+            AVCaptureDevice.requestAccess(for: .video) { granted in
+                DispatchQueue.main.async {
+                    if granted {
+                        showCameraPicker = true
+                    } else {
+                        showCameraPermissionAlert = true
+                    }
+                }
+            }
+        default:
+            showCameraPermissionAlert = true
+        }
+    }
+
+    private func handleLibraryTap() {
+        let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+        switch status {
+        case .authorized, .limited:
+            showLibraryPicker = true
+        case .notDetermined:
+            PHPhotoLibrary.requestAuthorization(for: .readWrite) { newStatus in
+                DispatchQueue.main.async {
+                    if newStatus == .authorized || newStatus == .limited {
+                        showLibraryPicker = true
+                    } else {
+                        showLibraryPermissionAlert = true
+                    }
+                }
+            }
+        default:
+            showLibraryPermissionAlert = true
+        }
+    }
+
+    private func openSettings() {
+        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+        UIApplication.shared.open(url)
     }
 }
 

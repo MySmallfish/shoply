@@ -102,5 +102,10 @@
 "Camera" = "Camera";
 "Library" = "Library";
 "Remove Icon" = "Remove Icon";
+"Camera Access" = "Camera Access";
+"Photo Access" = "Photo Access";
+"Open Settings" = "Open Settings";
+"Camera access is required to take item photos." = "Camera access is required to take item photos.";
+"Photo library access is required to choose an item image." = "Photo library access is required to choose an item image.";
 "Copy" = "Copy";
 "Edit" = "Edit";

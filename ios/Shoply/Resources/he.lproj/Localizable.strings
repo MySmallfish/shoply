@@ -102,5 +102,10 @@
 "Camera" = "מצלמה";
 "Library" = "גלריה";
 "Remove Icon" = "הסר אייקון";
+"Camera Access" = "גישה למצלמה";
+"Photo Access" = "גישה לגלריה";
+"Open Settings" = "פתח הגדרות";
+"Camera access is required to take item photos." = "נדרשת גישה למצלמה כדי לצלם תמונות של פריטים.";
+"Photo library access is required to choose an item image." = "נדרשת גישה לגלריה כדי לבחור תמונה לפריט.";
 "Copy" = "העתק";
 "Edit" = "ערוך";
