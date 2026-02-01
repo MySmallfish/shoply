@@ -1,1 +1,3 @@
 "NSCameraUsageDescription" = "אפשר גישה למצלמה כדי לסרוק ברקודים לפריטי קניות.";
+"NSPhotoLibraryUsageDescription" = "אפשר גישה לספריית התמונות כדי לבחור תמונות לפריטים.";
+"NSPhotoLibraryAddUsageDescription" = "אפשר גישה לשמירת תמונות פריטים בספריית התמונות.";

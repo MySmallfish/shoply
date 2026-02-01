@@ -1,14 +1,17 @@
 package com.shoply.app
 
+import android.Manifest
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.util.Base64
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -102,6 +105,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.core.content.ContextCompat
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
@@ -1468,9 +1472,23 @@ private fun IconPicker(
     }
 
     val libraryLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
+        contract = ActivityResultContracts.PickVisualMedia()
     ) { uri ->
         uri?.let { loadBitmap(context, it) }?.let { encodeIconBitmap(it) }?.let(onIconChange)
+    }
+
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            cameraLauncher.launch(null)
+        } else {
+            Toast.makeText(
+                context,
+                context.getString(R.string.camera_permission_required),
+                Toast.LENGTH_SHORT
+            ).show()
+        }
     }
 
     Column {
@@ -1492,13 +1510,31 @@ private fun IconPicker(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            OutlinedButton(onClick = { cameraLauncher.launch(null) }) {
+            OutlinedButton(
+                onClick = {
+                    val hasPermission = ContextCompat.checkSelfPermission(
+                        context,
+                        Manifest.permission.CAMERA
+                    ) == PackageManager.PERMISSION_GRANTED
+                    if (hasPermission) {
+                        cameraLauncher.launch(null)
+                    } else {
+                        cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                    }
+                }
+            ) {
                 Icon(imageVector = Icons.Default.CameraAlt, contentDescription = null)
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(stringResource(R.string.camera))
             }
             Spacer(modifier = Modifier.width(8.dp))
-            OutlinedButton(onClick = { libraryLauncher.launch("image/*") }) {
+            OutlinedButton(
+                onClick = {
+                    libraryLauncher.launch(
+                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                    )
+                }
+            ) {
                 Icon(imageVector = Icons.Default.PhotoLibrary, contentDescription = null)
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(stringResource(R.string.library))
