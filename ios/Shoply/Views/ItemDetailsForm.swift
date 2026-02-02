@@ -6,6 +6,7 @@ import UIKit
 struct ItemDetailsForm: View {
     @Binding var draft: ItemDetailsDraft
     let allowBarcodeEdit: Bool
+    let onScanBarcode: (() -> Void)?
     @Environment(\.layoutDirection) private var layoutDirection
     @State private var isEditingBarcode = false
 
@@ -29,6 +30,15 @@ struct ItemDetailsForm: View {
                     .disabled(!canEditBarcode)
                     .foregroundColor(canEditBarcode ? .primary : .secondary)
                     .multilineTextAlignment(alignment)
+
+                if let onScanBarcode {
+                    Button {
+                        onScanBarcode()
+                    } label: {
+                        Image(systemName: "barcode.viewfinder")
+                    }
+                    .accessibilityLabel(NSLocalizedString("Scan Barcode", comment: ""))
+                }
 
                 if !draft.barcode.isEmpty {
                     Button {

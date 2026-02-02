@@ -63,8 +63,10 @@
     <string name="join">הצטרף</string>
 
     <string name="item_details">פרטי פריט</string>
+    <string name="edit_item">ערוך פריט</string>
     <string name="name">שם</string>
     <string name="barcode">ברקוד</string>
+    <string name="scan_barcode">סרוק ברקוד</string>
     <string name="copy">העתק</string>
     <string name="edit">ערוך</string>
     <string name="price">מחיר</string>

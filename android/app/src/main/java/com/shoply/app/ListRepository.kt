@@ -191,6 +191,31 @@ class ListRepository {
         touchList(listId)
     }
 
+    fun updateItemDetails(
+        listId: String,
+        itemId: String,
+        name: String,
+        barcode: String?,
+        price: Double?,
+        description: String?,
+        icon: String?
+    ) {
+        val itemRef = db.collection("lists").document(listId).collection("items").document(itemId)
+        val trimmed = name.trim()
+        if (trimmed.isEmpty()) return
+        val updates = hashMapOf<String, Any>(
+            "name" to trimmed,
+            "normalizedName" to normalizedName(trimmed),
+            "updatedAt" to FieldValue.serverTimestamp()
+        )
+        updates["barcode"] = if (barcode.isNullOrBlank()) FieldValue.delete() else barcode
+        updates["price"] = price ?: FieldValue.delete()
+        updates["description"] = if (description.isNullOrBlank()) FieldValue.delete() else description
+        updates["icon"] = if (icon.isNullOrBlank()) FieldValue.delete() else icon
+        itemRef.update(updates)
+        touchList(listId)
+    }
+
     fun toggleBought(listId: String, item: ShoppingItem, userId: String) {
         val itemRef = db.collection("lists").document(listId).collection("items").document(item.id)
         val updates = hashMapOf<String, Any>(

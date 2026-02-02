@@ -148,6 +148,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         rememberItem(name, barcode, price, description, icon)
     }
 
+    fun updateItemDetails(
+        itemId: String,
+        name: String,
+        barcode: String?,
+        price: Double?,
+        description: String?,
+        icon: String?
+    ) {
+        val listId = _selectedListId.value ?: return
+        if (name.trim().isEmpty()) return
+        repo.updateItemDetails(listId, itemId, name, barcode, price, description, icon)
+        rememberItem(name, barcode, price, description, icon)
+    }
+
     fun toggleBought(item: ShoppingItem) {
         val listId = _selectedListId.value ?: return
         val userId = _user.value?.uid ?: return

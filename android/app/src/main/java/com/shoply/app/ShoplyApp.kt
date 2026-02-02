@@ -201,6 +201,7 @@ fun ListScreen(viewModel: MainViewModel) {
     var showInvite by remember { mutableStateOf(false) }
     var showCreateList by remember { mutableStateOf(false) }
     var showScanner by remember { mutableStateOf(false) }
+    var showBarcodeScanner by remember { mutableStateOf(false) }
     var showJoin by remember { mutableStateOf(false) }
     var showMembers by remember { mutableStateOf(false) }
     var showPendingInvites by remember { mutableStateOf(false) }
@@ -214,6 +215,7 @@ fun ListScreen(viewModel: MainViewModel) {
     var showDetails by remember { mutableStateOf(false) }
     var detailsDraft by remember { mutableStateOf(ItemDetailsDraft()) }
     var detailsAllowBarcodeEdit by remember { mutableStateOf(true) }
+    var detailsItemId by remember { mutableStateOf<String?>(null) }
     var isRefreshing by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     val refreshScope = rememberCoroutineScope()
@@ -372,6 +374,7 @@ fun ListScreen(viewModel: MainViewModel) {
                             icon = match?.icon.orEmpty()
                         )
                         detailsAllowBarcodeEdit = match?.barcode.isNullOrBlank()
+                        detailsItemId = null
                         showDetails = true
                     }
                 )
@@ -519,6 +522,17 @@ fun ListScreen(viewModel: MainViewModel) {
         )
     }
 
+    if (showBarcodeScanner) {
+        ScannerDialog(
+            onDismiss = { showBarcodeScanner = false },
+            onCode = { code ->
+                detailsDraft = detailsDraft.copy(barcode = code)
+                detailsAllowBarcodeEdit = false
+                showBarcodeScanner = false
+            }
+        )
+    }
+
     if (showJoin) {
         JoinListDialog(
             onDismiss = { showJoin = false },
@@ -537,6 +551,19 @@ fun ListScreen(viewModel: MainViewModel) {
             onModeChange = { adjustMode = it },
             onAmountChange = { adjustAmount = it },
             onDismiss = { adjustItem = null },
+            onEditDetails = {
+                detailsDraft = ItemDetailsDraft(
+                    name = item.name,
+                    barcode = item.barcode.orEmpty(),
+                    price = item.price?.toString().orEmpty(),
+                    description = item.description.orEmpty(),
+                    icon = item.icon.orEmpty()
+                )
+                detailsAllowBarcodeEdit = item.barcode.isNullOrBlank()
+                detailsItemId = item.id
+                adjustItem = null
+                showDetails = true
+            },
             onApply = {
                 val resolved = maxOf(1, adjustAmount)
                 val delta = if (adjustMode == QuantityMode.BOUGHT) -resolved else resolved
@@ -576,18 +603,32 @@ fun ListScreen(viewModel: MainViewModel) {
             onDraftChange = { detailsDraft = it },
             onDismiss = { showDetails = false },
             allowBarcodeEdit = detailsAllowBarcodeEdit,
+            onScanBarcode = { showBarcodeScanner = true },
             onSave = {
-                viewModel.addItem(
-                    detailsDraft.name,
-                    detailsDraft.barcode.ifBlank { null },
-                    detailsDraft.priceValue(),
-                    detailsDraft.description,
-                    detailsDraft.icon
-                )
-                newItemName = ""
-                selectedSuggestion = null
+                val itemId = detailsItemId
+                if (itemId != null) {
+                    viewModel.updateItemDetails(
+                        itemId = itemId,
+                        name = detailsDraft.name,
+                        barcode = detailsDraft.barcode.ifBlank { null },
+                        price = detailsDraft.priceValue(),
+                        description = detailsDraft.description,
+                        icon = detailsDraft.icon
+                    )
+                } else {
+                    viewModel.addItem(
+                        detailsDraft.name,
+                        detailsDraft.barcode.ifBlank { null },
+                        detailsDraft.priceValue(),
+                        detailsDraft.description,
+                        detailsDraft.icon
+                    )
+                    newItemName = ""
+                    selectedSuggestion = null
+                }
                 showDetails = false
                 detailsDraft = ItemDetailsDraft()
+                detailsItemId = null
             }
         )
     }
@@ -1198,6 +1239,7 @@ private fun ItemDetailsDialog(
     onDraftChange: (ItemDetailsDraft) -> Unit,
     onDismiss: () -> Unit,
     allowBarcodeEdit: Boolean,
+    onScanBarcode: () -> Unit,
     onSave: () -> Unit
 ) {
     val textAlign = inputTextAlign()
@@ -1218,7 +1260,8 @@ private fun ItemDetailsDialog(
                     value = draft.barcode,
                     onValueChange = { onDraftChange(draft.copy(barcode = it)) },
                     textAlign = textAlign,
-                    initiallyEditable = allowBarcodeEdit
+                    initiallyEditable = allowBarcodeEdit,
+                    onScan = onScanBarcode
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 TextField(
@@ -1269,6 +1312,7 @@ private fun AdjustQuantityDialog(
     onModeChange: (QuantityMode) -> Unit,
     onAmountChange: (Int) -> Unit,
     onDismiss: () -> Unit,
+    onEditDetails: () -> Unit,
     onApply: () -> Unit
 ) {
     AlertDialog(
@@ -1297,6 +1341,10 @@ private fun AdjustQuantityDialog(
                             Text(stringResource(R.string.need))
                         }
                     }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                TextButton(onClick = onEditDetails) {
+                    Text(stringResource(R.string.edit_item))
                 }
                 Spacer(modifier = Modifier.height(12.dp))
                 Row(
@@ -1428,7 +1476,8 @@ private fun BarcodeField(
     value: String,
     onValueChange: (String) -> Unit,
     textAlign: TextAlign,
-    initiallyEditable: Boolean
+    initiallyEditable: Boolean,
+    onScan: (() -> Unit)? = null
 ) {
     var isEditable by remember(initiallyEditable) { mutableStateOf(initiallyEditable) }
     val clipboard = LocalClipboardManager.current
@@ -1444,6 +1493,11 @@ private fun BarcodeField(
             enabled = isEditable,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
         )
+        if (onScan != null) {
+            IconButton(onClick = onScan) {
+                Icon(imageVector = Icons.Default.CameraAlt, contentDescription = stringResource(R.string.scan_barcode))
+            }
+        }
         if (value.isNotBlank()) {
             IconButton(onClick = { clipboard.setText(AnnotatedString(value)) }) {
                 Icon(imageVector = Icons.Default.ContentCopy, contentDescription = stringResource(R.string.copy))

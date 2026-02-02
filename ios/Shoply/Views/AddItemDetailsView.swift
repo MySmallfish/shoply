@@ -9,6 +9,7 @@ struct AddItemDetailsView: View {
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.layoutDirection) private var layoutDirection
+    @State private var showBarcodeScanner = false
 
     init(
         draft: Binding<ItemDetailsDraft>,
@@ -27,7 +28,11 @@ struct AddItemDetailsView: View {
     var body: some View {
         NavigationStack {
             Form {
-                ItemDetailsForm(draft: $draft, allowBarcodeEdit: allowBarcodeEdit)
+                ItemDetailsForm(
+                    draft: $draft,
+                    allowBarcodeEdit: allowBarcodeEdit,
+                    onScanBarcode: { showBarcodeScanner = true }
+                )
             }
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
@@ -58,6 +63,12 @@ struct AddItemDetailsView: View {
                         dismiss()
                     }
                 }
+            }
+        }
+        .sheet(isPresented: $showBarcodeScanner) {
+            ScannerView { code in
+                draft.barcode = code
+                showBarcodeScanner = false
             }
         }
     }
