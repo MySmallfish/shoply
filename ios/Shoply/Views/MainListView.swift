@@ -245,6 +245,13 @@ struct MainListView: View {
                         onTap: { adjustItem = item },
                         onIncrement: { listViewModel.incrementQuantity(item) },
                         onDecrement: { listViewModel.decrementQuantity(item) })
+                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                        Button(role: .destructive) {
+                            listViewModel.deleteItem(item)
+                        } label: {
+                            Label(NSLocalizedString("Delete", comment: ""), systemImage: "trash")
+                        }
+                    }
             }
         }
         .listStyle(.plain)

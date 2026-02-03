@@ -155,6 +155,11 @@ final class ListViewModel: ObservableObject {
         )
     }
 
+    func deleteItem(_ item: ShoppingItem) {
+        guard let listId = listId else { return }
+        repository.deleteItem(listId: listId, itemId: item.id)
+    }
+
     func updateItemDetails(itemId: String, draft: ItemDetailsDraft) {
         guard let listId = listId, let userId = userId else { return }
         let name = draft.name.trimmingCharacters(in: .whitespacesAndNewlines)

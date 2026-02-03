@@ -56,6 +56,7 @@
     <string name="make_editor">Make Editor</string>
     <string name="make_viewer">Make Viewer</string>
     <string name="remove">Remove</string>
+    <string name="delete">Delete</string>
     <string name="revoke">Revoke</string>
 
     <string name="join_list_title">Join List</string>

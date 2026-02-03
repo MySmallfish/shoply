@@ -214,6 +214,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         )
     }
 
+    fun deleteItem(item: ShoppingItem) {
+        val listId = _selectedListId.value ?: return
+        repo.deleteItem(listId, item.id)
+    }
+
     fun adjustQuantity(item: ShoppingItem, delta: Int) {
         val listId = _selectedListId.value ?: return
         if (delta == 0) return

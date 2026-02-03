@@ -43,6 +43,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Email
@@ -51,6 +52,10 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.PowerSettingsNew
+import androidx.compose.material.DismissDirection
+import androidx.compose.material.DismissValue
+import androidx.compose.material.SwipeToDismiss
+import androidx.compose.material.rememberDismissState
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
@@ -407,12 +412,41 @@ fun ListScreen(viewModel: MainViewModel) {
                         }
                     }
                 } else {
-                    items(items) { item ->
-                        ItemRow(
-                            item = item,
-                            onTap = { openAdjustDialog(item) },
-                            onIncrement = { viewModel.incrementQuantity(item) },
-                            onDecrement = { viewModel.decrementQuantity(item) }
+                    items(items, key = { it.id }) { item ->
+                        val dismissState = rememberDismissState(confirmStateChange = { value ->
+                            if (value == DismissValue.DismissedToStart) {
+                                viewModel.deleteItem(item)
+                                true
+                            } else {
+                                false
+                            }
+                        })
+                        SwipeToDismiss(
+                            state = dismissState,
+                            directions = setOf(DismissDirection.EndToStart),
+                            background = {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(MaterialTheme.colorScheme.errorContainer),
+                                    contentAlignment = Alignment.CenterEnd
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Delete,
+                                        contentDescription = stringResource(R.string.delete),
+                                        tint = MaterialTheme.colorScheme.onErrorContainer,
+                                        modifier = Modifier.padding(end = 24.dp)
+                                    )
+                                }
+                            },
+                            dismissContent = {
+                                ItemRow(
+                                    item = item,
+                                    onTap = { openAdjustDialog(item) },
+                                    onIncrement = { viewModel.incrementQuantity(item) },
+                                    onDecrement = { viewModel.decrementQuantity(item) }
+                                )
+                            }
                         )
                     }
                 }
