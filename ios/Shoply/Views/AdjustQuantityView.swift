@@ -4,6 +4,7 @@ struct AdjustQuantityView: View {
     private let item: ShoppingItem
     private let onApply: (Int) -> Void
     private let onEditDetails: () -> Void
+    private let onIconTap: ((String) -> Void)?
 
     @State private var amount: Int
     @State private var mode: QuantityMode
@@ -11,7 +12,12 @@ struct AdjustQuantityView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.layoutDirection) private var layoutDirection
 
-    init(item: ShoppingItem, onApply: @escaping (Int) -> Void, onEditDetails: @escaping () -> Void) {
+    init(
+        item: ShoppingItem,
+        onApply: @escaping (Int) -> Void,
+        onEditDetails: @escaping () -> Void,
+        onIconTap: ((String) -> Void)? = nil
+    ) {
         self.item = item
         let defaultMode: QuantityMode = item.quantity <= 0 ? .need : .bought
         self._mode = State(initialValue: defaultMode)
@@ -19,6 +25,7 @@ struct AdjustQuantityView: View {
         self._amount = State(initialValue: startingAmount)
         self.onApply = onApply
         self.onEditDetails = onEditDetails
+        self.onIconTap = onIconTap
     }
 
     var body: some View {
@@ -26,12 +33,28 @@ struct AdjustQuantityView: View {
         let title = NSLocalizedString("Update Item", comment: "")
         NavigationStack {
             VStack(spacing: 20) {
-                VStack(alignment: alignment, spacing: 6) {
-                    Text(item.name)
-                        .font(.system(size: 18, weight: .semibold))
-                    Text(String(format: NSLocalizedString("left_to_buy_format", comment: ""), item.quantity))
-                        .font(.system(size: 14))
-                        .foregroundColor(.secondary)
+                HStack(alignment: .center, spacing: 12) {
+                    if let icon = item.icon, !icon.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        if let onIconTap {
+                            Button {
+                                onIconTap(icon)
+                            } label: {
+                                ItemIconView(icon: icon, size: 28)
+                            }
+                            .buttonStyle(.plain)
+                        } else {
+                            ItemIconView(icon: icon, size: 28)
+                        }
+                    }
+
+                    VStack(alignment: alignment, spacing: 6) {
+                        Text(item.name)
+                            .font(.system(size: 18, weight: .semibold))
+                        Text(String(format: NSLocalizedString("left_to_buy_format", comment: ""), item.quantity))
+                            .font(.system(size: 14))
+                            .foregroundColor(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, alignment: layoutDirection == .rightToLeft ? .trailing : .leading)
                 }
                 .frame(maxWidth: .infinity, alignment: layoutDirection == .rightToLeft ? .trailing : .leading)
 

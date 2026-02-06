@@ -20,6 +20,7 @@ struct MainListView: View {
     @State private var detailsDraft = ItemDetailsDraft()
     @State private var detailsItemId: String?
     @State private var undoTask: Task<Void, Never>?
+    @State private var previewIcon: PreviewIcon?
 
     var body: some View {
         NavigationStack {
@@ -138,9 +139,14 @@ struct MainListView: View {
             }, onEditDetails: {
                 adjustItem = nil
                 openDetails(for: item)
+            }, onIconTap: { icon in
+                previewIcon = PreviewIcon(icon: icon)
             })
             .presentationDetents([.medium])
             .presentationDragIndicator(.visible)
+        }
+        .fullScreenCover(item: $previewIcon) { item in
+            IconPreviewView(icon: item.icon)
         }
         .confirmationDialog(
             "Merge lists?",
@@ -243,6 +249,7 @@ struct MainListView: View {
             ForEach(listViewModel.items) { item in
                 ItemRow(item: item,
                         onTap: { adjustItem = item },
+                        onIconTap: { icon in previewIcon = PreviewIcon(icon: icon) },
                         onIncrement: { listViewModel.incrementQuantity(item) },
                         onDecrement: { listViewModel.decrementQuantity(item) })
                     .swipeActions(edge: .trailing, allowsFullSwipe: true) {
@@ -419,6 +426,11 @@ struct MainListView: View {
     private func normalizedName(_ name: String) -> String {
         name.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
     }
+}
+
+private struct PreviewIcon: Identifiable {
+    let id = UUID()
+    let icon: String
 }
 
 private struct UndoToastView: View {

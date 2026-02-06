@@ -3,22 +3,44 @@ import SwiftUI
 struct ItemRow: View {
     let item: ShoppingItem
     let onTap: () -> Void
+    let onIconTap: ((String) -> Void)?
     let onIncrement: () -> Void
     let onDecrement: () -> Void
 
+    init(
+        item: ShoppingItem,
+        onTap: @escaping () -> Void,
+        onIconTap: ((String) -> Void)? = nil,
+        onIncrement: @escaping () -> Void,
+        onDecrement: @escaping () -> Void
+    ) {
+        self.item = item
+        self.onTap = onTap
+        self.onIconTap = onIconTap
+        self.onIncrement = onIncrement
+        self.onDecrement = onDecrement
+    }
+
     var body: some View {
         HStack(spacing: 12) {
-            Button(action: onTap) {
-                HStack(spacing: 8) {
-                    if let icon = item.icon, !icon.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            if let icon = item.icon, !icon.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                if let onIconTap {
+                    Button {
+                        onIconTap(icon)
+                    } label: {
                         ItemIconView(icon: icon, size: 20)
                     }
-
-                    Text(item.name)
-                        .foregroundColor(.primary)
+                    .buttonStyle(.plain)
+                } else {
+                    ItemIconView(icon: icon, size: 20)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(Rectangle())
+            }
+
+            Button(action: onTap) {
+                Text(item.name)
+                    .foregroundColor(.primary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
 

@@ -16,6 +16,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -27,6 +28,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -52,14 +54,13 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.PowerSettingsNew
-import androidx.compose.material.DismissDirection
-import androidx.compose.material.DismissValue
-import androidx.compose.material.SwipeToDismiss
-import androidx.compose.material.rememberDismissState
+import androidx.compose.material.FractionalThreshold
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
+import androidx.compose.material.rememberSwipeableState
+import androidx.compose.material.swipeable
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -91,11 +92,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
@@ -106,6 +109,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -118,6 +122,7 @@ import com.google.android.gms.common.api.ApiException
 import java.io.ByteArrayOutputStream
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 @Composable
 fun ShoplyApp(viewModel: MainViewModel) {
@@ -236,6 +241,7 @@ fun ListScreen(viewModel: MainViewModel) {
             }
         }
     )
+    var previewIcon by remember { mutableStateOf<String?>(null) }
 
     fun openAdjustDialog(item: ShoppingItem) {
         val defaultMode = if (item.quantity <= 0) QuantityMode.NEED else QuantityMode.BOUGHT
@@ -414,43 +420,80 @@ fun ListScreen(viewModel: MainViewModel) {
                     }
                 } else {
                     items(items, key = { it.id }) { item ->
-                        val dismissState = rememberDismissState(confirmStateChange = { false })
-                        SwipeToDismiss(
-                            state = dismissState,
-                            directions = setOf(DismissDirection.EndToStart),
-                            background = {
-                                val showDelete = dismissState.progress.fraction > 0f
-                                if (showDelete) {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .background(MaterialTheme.colorScheme.errorContainer),
-                                        contentAlignment = Alignment.CenterEnd
-                                    ) {
-                                        IconButton(onClick = {
-                                            viewModel.deleteItem(item)
-                                            swipeScope.launch { dismissState.reset() }
-                                        }) {
-                                            Icon(
-                                                imageVector = Icons.Default.Delete,
-                                                contentDescription = stringResource(R.string.delete),
-                                                tint = MaterialTheme.colorScheme.onErrorContainer
-                                            )
-                                        }
-                                    }
-                                }
-                            },
-                            dismissContent = {
-                                Surface(color = MaterialTheme.colorScheme.surface) {
-                                    ItemRow(
-                                        item = item,
-                                        onTap = { openAdjustDialog(item) },
-                                        onIncrement = { viewModel.incrementQuantity(item) },
-                                        onDecrement = { viewModel.decrementQuantity(item) }
+                        val layoutDirection = LocalLayoutDirection.current
+                        val actionWidth = 72.dp
+                        val actionWidthPx = with(LocalDensity.current) { actionWidth.toPx() }
+                        val openOffset = if (layoutDirection == LayoutDirection.Rtl) {
+                            actionWidthPx
+                        } else {
+                            -actionWidthPx
+                        }
+                        val swipeState = rememberSwipeableState(initialValue = 0)
+                        val anchors = remember(openOffset) { mapOf(0f to 0, openOffset to 1) }
+                        val offsetX = swipeState.offset.value.roundToInt()
+                        val isOpen = swipeState.currentValue == 1
+                        val deleteAlignment = if (layoutDirection == LayoutDirection.Rtl) {
+                            Alignment.CenterStart
+                        } else {
+                            Alignment.CenterEnd
+                        }
+                        val deletePadding = if (layoutDirection == LayoutDirection.Rtl) {
+                            Modifier.padding(start = 12.dp)
+                        } else {
+                            Modifier.padding(end = 12.dp)
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .swipeable(
+                                    state = swipeState,
+                                    anchors = anchors,
+                                    thresholds = { _, _ -> FractionalThreshold(0.3f) },
+                                    orientation = Orientation.Horizontal
+                                )
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(MaterialTheme.colorScheme.errorContainer),
+                                contentAlignment = deleteAlignment
+                            ) {
+                                IconButton(
+                                    onClick = {
+                                        viewModel.deleteItem(item)
+                                        swipeScope.launch { swipeState.animateTo(0) }
+                                    },
+                                    modifier = deletePadding
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Delete,
+                                        contentDescription = stringResource(R.string.delete),
+                                        tint = MaterialTheme.colorScheme.onErrorContainer
                                     )
                                 }
                             }
-                        )
+                            Surface(
+                                color = MaterialTheme.colorScheme.surface,
+                                modifier = Modifier
+                                    .offset { IntOffset(offsetX, 0) }
+                                    .fillMaxWidth()
+                            ) {
+                                ItemRow(
+                                    item = item,
+                                    onTap = {
+                                        if (isOpen) {
+                                            swipeScope.launch { swipeState.animateTo(0) }
+                                        } else {
+                                            openAdjustDialog(item)
+                                        }
+                                    },
+                                    onIconTap = { icon -> previewIcon = icon },
+                                    onIncrement = { viewModel.incrementQuantity(item) },
+                                    onDecrement = { viewModel.decrementQuantity(item) }
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -601,6 +644,7 @@ fun ListScreen(viewModel: MainViewModel) {
                 adjustItem = null
                 showDetails = true
             },
+            onIconTap = { icon -> previewIcon = icon },
             onApply = {
                 val resolved = maxOf(1, adjustAmount)
                 val delta = if (adjustMode == QuantityMode.BOUGHT) -resolved else resolved
@@ -608,6 +652,10 @@ fun ListScreen(viewModel: MainViewModel) {
                 adjustItem = null
             }
         )
+    }
+
+    previewIcon?.let { icon ->
+        IconPreviewDialog(icon = icon, onDismiss = { previewIcon = null })
     }
 
     if (showAddFromScan) {
@@ -675,6 +723,7 @@ fun ListScreen(viewModel: MainViewModel) {
 private fun ItemRow(
     item: ShoppingItem,
     onTap: () -> Unit,
+    onIconTap: ((String) -> Unit)? = null,
     onIncrement: () -> Unit,
     onDecrement: () -> Unit
 ) {
@@ -691,11 +740,22 @@ private fun ItemRow(
             verticalAlignment = Alignment.CenterVertically
         ) {
             item.icon?.takeIf { it.isNotBlank() }?.let { icon ->
-                ItemIconView(
-                    icon = icon,
-                    size = 20.dp,
-                    modifier = Modifier.padding(end = 6.dp)
-                )
+                if (onIconTap != null) {
+                    IconButton(
+                        onClick = { onIconTap(icon) },
+                        modifier = Modifier
+                            .size(32.dp)
+                            .padding(end = 6.dp)
+                    ) {
+                        ItemIconView(icon = icon, size = 20.dp)
+                    }
+                } else {
+                    ItemIconView(
+                        icon = icon,
+                        size = 20.dp,
+                        modifier = Modifier.padding(end = 6.dp)
+                    )
+                }
             }
             Text(
                 text = item.name,
@@ -1350,6 +1410,7 @@ private fun AdjustQuantityDialog(
     onAmountChange: (Int) -> Unit,
     onDismiss: () -> Unit,
     onEditDetails: () -> Unit,
+    onIconTap: (String) -> Unit,
     onApply: () -> Unit
 ) {
     AlertDialog(
@@ -1357,6 +1418,19 @@ private fun AdjustQuantityDialog(
         title = { Text(stringResource(R.string.how_much_did_you_buy)) },
         text = {
             Column {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    item.icon?.takeIf { it.isNotBlank() }?.let { icon ->
+                        IconButton(onClick = { onIconTap(icon) }, modifier = Modifier.size(32.dp)) {
+                            ItemIconView(icon = icon, size = 24.dp)
+                        }
+                        Spacer(modifier = Modifier.width(6.dp))
+                    }
+                    Text(
+                        text = item.name,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
                 Text(
                     stringResource(R.string.left_to_buy_format, item.quantity),
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
@@ -1675,6 +1749,33 @@ private fun ItemIconView(
             )
         } else {
             Text(text = icon, fontSize = (size.value * 0.9f).sp)
+        }
+    }
+}
+
+@Composable
+private fun IconPreviewDialog(icon: String, onDismiss: () -> Unit) {
+    Dialog(onDismissRequest = onDismiss) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black)
+                .clickable { onDismiss() },
+            contentAlignment = Alignment.Center
+        ) {
+            val image = remember(icon) { decodeIconImage(icon) }
+            if (image != null) {
+                Image(
+                    bitmap = image,
+                    contentDescription = null,
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp)
+                )
+            } else {
+                Text(text = icon, fontSize = 96.sp, color = Color.White)
+            }
         }
     }
 }
