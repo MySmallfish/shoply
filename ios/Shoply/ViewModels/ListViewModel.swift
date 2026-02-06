@@ -13,6 +13,7 @@ final class ListViewModel: ObservableObject {
     private var catalogListener: ListenerRegistration?
     private var listId: String?
     private var userId: String?
+    private var lastDeleted: DeletedItem?
 
     func bind(listId: String, userId: String, force: Bool = false, resetState: Bool = true) {
         if !force, self.listId == listId && self.userId == userId {
@@ -28,6 +29,7 @@ final class ListViewModel: ObservableObject {
             catalogItems = []
             lastScannedBarcode = nil
             undoAction = nil
+            lastDeleted = nil
         }
         self.listId = listId
         self.userId = userId
@@ -157,7 +159,14 @@ final class ListViewModel: ObservableObject {
 
     func deleteItem(_ item: ShoppingItem) {
         guard let listId = listId else { return }
+        lastDeleted = DeletedItem(listId: listId, item: item)
         repository.deleteItem(listId: listId, itemId: item.id)
+    }
+
+    func undoLastDeletion() {
+        guard let deleted = lastDeleted, let userId = userId else { return }
+        repository.restoreItem(listId: deleted.listId, item: deleted.item, userId: userId)
+        lastDeleted = nil
     }
 
     func updateItemDetails(itemId: String, draft: ItemDetailsDraft) {
@@ -295,4 +304,9 @@ struct UndoAction: Equatable {
     let itemId: String
     let wasBought: Bool
     let name: String
+}
+
+private struct DeletedItem {
+    let listId: String
+    let item: ShoppingItem
 }

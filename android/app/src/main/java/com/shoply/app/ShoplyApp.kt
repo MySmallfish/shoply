@@ -11,6 +11,10 @@ import android.net.Uri
 import android.provider.MediaStore
 import android.util.Base64
 import android.widget.Toast
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -82,6 +86,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -103,6 +108,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.material3.LocalTextStyle
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.font.FontWeight
@@ -123,6 +129,7 @@ import java.io.ByteArrayOutputStream
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
+import kotlin.math.sqrt
 
 @Composable
 fun ShoplyApp(viewModel: MainViewModel) {
@@ -206,6 +213,8 @@ fun ListScreen(viewModel: MainViewModel) {
     val selectedListId by viewModel.selectedListId.collectAsState(initial = null)
     val undoAction by viewModel.undoAction.collectAsState(initial = null)
     val context = LocalContext.current
+
+    ShakeDetector(onShake = { viewModel.undoLastDeletion() })
 
     var newItemName by remember { mutableStateOf("") }
     var showInvite by remember { mutableStateOf(false) }
@@ -432,16 +441,8 @@ fun ListScreen(viewModel: MainViewModel) {
                         val anchors = remember(openOffset) { mapOf(0f to 0, openOffset to 1) }
                         val offsetX = swipeState.offset.value.roundToInt()
                         val isOpen = swipeState.currentValue == 1
-                        val deleteAlignment = if (layoutDirection == LayoutDirection.Rtl) {
-                            Alignment.CenterStart
-                        } else {
-                            Alignment.CenterEnd
-                        }
-                        val deletePadding = if (layoutDirection == LayoutDirection.Rtl) {
-                            Modifier.padding(start = 12.dp)
-                        } else {
-                            Modifier.padding(end = 12.dp)
-                        }
+                        val deleteAlignment = Alignment.CenterEnd
+                        val deletePadding = Modifier.padding(end = 12.dp)
 
                         Box(
                             modifier = Modifier
@@ -1813,6 +1814,66 @@ private fun encodeIconBitmap(bitmap: Bitmap): String? {
     }
     val base64 = Base64.encodeToString(output.toByteArray(), Base64.NO_WRAP)
     return "img:$base64"
+}
+
+@Composable
+private fun ShakeDetector(
+    onShake: () -> Unit,
+    threshold: Float = 2.7f,
+    debounceMs: Long = 1200L
+) {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val sensorManager = remember {
+        context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
+    }
+    val accelerometer = remember { sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) }
+    val lastShake = remember { mutableStateOf(0L) }
+
+    DisposableEffect(lifecycleOwner, accelerometer, onShake) {
+        if (accelerometer == null) return@DisposableEffect onDispose { }
+
+        val listener = object : SensorEventListener {
+            override fun onSensorChanged(event: SensorEvent) {
+                val x = event.values[0] / SensorManager.GRAVITY_EARTH
+                val y = event.values[1] / SensorManager.GRAVITY_EARTH
+                val z = event.values[2] / SensorManager.GRAVITY_EARTH
+                val gForce = sqrt(x * x + y * y + z * z)
+                if (gForce > threshold) {
+                    val now = System.currentTimeMillis()
+                    if (now - lastShake.value > debounceMs) {
+                        lastShake.value = now
+                        onShake()
+                    }
+                }
+            }
+
+            override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
+        }
+
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            when (event) {
+                androidx.lifecycle.Lifecycle.Event.ON_RESUME -> {
+                    sensorManager.registerListener(
+                        listener,
+                        accelerometer,
+                        SensorManager.SENSOR_DELAY_UI
+                    )
+                }
+                androidx.lifecycle.Lifecycle.Event.ON_PAUSE -> {
+                    sensorManager.unregisterListener(listener)
+                }
+                else -> Unit
+            }
+        }
+
+        lifecycleOwner.lifecycle.addObserver(observer)
+
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            sensorManager.unregisterListener(listener)
+        }
+    }
 }
 
 private fun resizeBitmap(bitmap: Bitmap, maxDimension: Int): Bitmap {

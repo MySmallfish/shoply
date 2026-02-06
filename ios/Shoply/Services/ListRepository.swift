@@ -373,6 +373,43 @@ final class ListRepository {
         touchList(listId: listId)
     }
 
+    func restoreItem(listId: String, item: ShoppingItem, userId: String) {
+        let itemRef = db.collection("lists").document(listId).collection("items").document(item.id)
+        var data: [String: Any] = [
+            "name": item.name,
+            "normalizedName": normalizedName(item.name),
+            "quantity": item.quantity,
+            "isBought": item.isBought,
+            "createdAt": Timestamp(date: item.createdAt),
+            "createdBy": item.createdBy.isEmpty ? userId : item.createdBy,
+            "updatedAt": FieldValue.serverTimestamp()
+        ]
+
+        if let barcode = item.barcode, !barcode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            data["barcode"] = barcode
+        }
+        if let price = item.price {
+            data["price"] = price
+        }
+        if let description = item.itemDescription, !description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            data["description"] = description
+        }
+        if let icon = item.icon, !icon.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            data["icon"] = icon
+        }
+        if item.isBought {
+            if let boughtAt = item.boughtAt {
+                data["boughtAt"] = Timestamp(date: boughtAt)
+            } else {
+                data["boughtAt"] = FieldValue.serverTimestamp()
+            }
+            data["boughtBy"] = item.boughtBy ?? userId
+        }
+
+        itemRef.setData(data)
+        touchList(listId: listId)
+    }
+
     func setBought(listId: String, itemId: String, isBought: Bool, userId: String) {
         let itemRef = db.collection("lists").document(listId).collection("items").document(itemId)
         var updates: [String: Any] = [

@@ -50,6 +50,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _inviteActionError = MutableStateFlow<String?>(null)
     val inviteActionError: StateFlow<String?> = _inviteActionError
 
+    private var lastDeleted: DeletedItem? = null
+
     private val _mergePrompt = MutableStateFlow<MergePrompt?>(null)
     val mergePrompt: StateFlow<MergePrompt?> = _mergePrompt
 
@@ -108,6 +110,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun selectList(listId: String) {
         val userId = _user.value?.uid ?: return
+        lastDeleted = null
         _selectedListId.value = listId
         prefs.edit().putString("lastListId_$userId", listId).apply()
         repo.updateLastList(userId, listId)
@@ -216,7 +219,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun deleteItem(item: ShoppingItem) {
         val listId = _selectedListId.value ?: return
+        lastDeleted = DeletedItem(listId, item)
         repo.deleteItem(listId, item.id)
+    }
+
+    fun undoLastDeletion() {
+        val deleted = lastDeleted ?: return
+        val userId = _user.value?.uid ?: return
+        repo.restoreItem(deleted.listId, deleted.item, userId)
+        lastDeleted = null
     }
 
     fun adjustQuantity(item: ShoppingItem, delta: Int) {
@@ -757,4 +768,9 @@ data class UndoAction(
     val itemId: String,
     val wasBought: Boolean,
     val name: String
+)
+
+private data class DeletedItem(
+    val listId: String,
+    val item: ShoppingItem
 )

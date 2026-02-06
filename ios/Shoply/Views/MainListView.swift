@@ -21,6 +21,7 @@ struct MainListView: View {
     @State private var detailsItemId: String?
     @State private var undoTask: Task<Void, Never>?
     @State private var previewIcon: PreviewIcon?
+    @StateObject private var shakeDetector = ShakeDetector()
 
     var body: some View {
         NavigationStack {
@@ -49,6 +50,11 @@ struct MainListView: View {
         }
         .onAppear {
             bindIfNeeded()
+            shakeDetector.onShake = { listViewModel.undoLastDeletion() }
+            shakeDetector.start()
+        }
+        .onDisappear {
+            shakeDetector.stop()
         }
         .onChange(of: session.selectedListId) { _ in
             bindIfNeeded()

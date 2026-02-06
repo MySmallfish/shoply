@@ -1,9 +1,11 @@
 package com.shoply.app
 
+import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
+import java.util.Date
 
 class ListRepository {
     private val db = FirebaseFirestore.getInstance()
@@ -257,6 +259,38 @@ class ListRepository {
     fun deleteItem(listId: String, itemId: String) {
         val itemRef = db.collection("lists").document(listId).collection("items").document(itemId)
         itemRef.delete()
+        touchList(listId)
+    }
+
+    fun restoreItem(listId: String, item: ShoppingItem, userId: String) {
+        val itemRef = db.collection("lists").document(listId).collection("items").document(item.id)
+        val data = hashMapOf<String, Any>(
+            "name" to item.name,
+            "normalizedName" to normalizedName(item.name),
+            "quantity" to item.quantity,
+            "isBought" to item.isBought,
+            "createdAt" to Timestamp(Date(item.createdAt)),
+            "createdBy" to (if (item.createdBy.isNotBlank()) item.createdBy else userId),
+            "updatedAt" to FieldValue.serverTimestamp()
+        )
+        if (!item.barcode.isNullOrBlank()) {
+            data["barcode"] = item.barcode
+        }
+        if (item.price != null) {
+            data["price"] = item.price
+        }
+        if (!item.description.isNullOrBlank()) {
+            data["description"] = item.description
+        }
+        if (!item.icon.isNullOrBlank()) {
+            data["icon"] = item.icon
+        }
+        if (item.isBought) {
+            val boughtAt = item.boughtAt ?: System.currentTimeMillis()
+            data["boughtAt"] = Timestamp(Date(boughtAt))
+            data["boughtBy"] = item.boughtBy ?: userId
+        }
+        itemRef.set(data)
         touchList(listId)
     }
 
