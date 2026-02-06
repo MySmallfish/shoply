@@ -14,6 +14,12 @@ This file captures current project state, key decisions, build steps, and known 
 - Push to `origin` only when explicitly requested by the user.
 - Open PRs only when explicitly requested by the user.
 - Never commit secrets (see Firebase notes below).
+ 
+## Auto-Deploy Rule (Important)
+- After every code change, automatically deploy and open the app on:
+  - iOS device (network-connected)
+  - Android device (Wi‑Fi adb)
+- Do not wait for confirmation unless the user explicitly says to skip deployment.
 
 ## Current Status (As Of Last Change)
 - iOS scaling issue fixed by restoring launch screen config.

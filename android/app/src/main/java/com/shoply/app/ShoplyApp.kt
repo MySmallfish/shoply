@@ -224,6 +224,7 @@ fun ListScreen(viewModel: MainViewModel) {
     var isRefreshing by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     val refreshScope = rememberCoroutineScope()
+    val swipeScope = rememberCoroutineScope()
     val pullRefreshState = rememberPullRefreshState(
         refreshing = isRefreshing,
         onRefresh = {
@@ -413,39 +414,41 @@ fun ListScreen(viewModel: MainViewModel) {
                     }
                 } else {
                     items(items, key = { it.id }) { item ->
-                        val dismissState = rememberDismissState(confirmStateChange = { value ->
-                            if (value == DismissValue.DismissedToStart) {
-                                viewModel.deleteItem(item)
-                                true
-                            } else {
-                                false
-                            }
-                        })
+                        val dismissState = rememberDismissState(confirmStateChange = { false })
                         SwipeToDismiss(
                             state = dismissState,
                             directions = setOf(DismissDirection.EndToStart),
                             background = {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .background(MaterialTheme.colorScheme.errorContainer),
-                                    contentAlignment = Alignment.CenterEnd
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Delete,
-                                        contentDescription = stringResource(R.string.delete),
-                                        tint = MaterialTheme.colorScheme.onErrorContainer,
-                                        modifier = Modifier.padding(end = 24.dp)
-                                    )
+                                val showDelete = dismissState.progress.fraction > 0f
+                                if (showDelete) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .background(MaterialTheme.colorScheme.errorContainer),
+                                        contentAlignment = Alignment.CenterEnd
+                                    ) {
+                                        IconButton(onClick = {
+                                            viewModel.deleteItem(item)
+                                            swipeScope.launch { dismissState.reset() }
+                                        }) {
+                                            Icon(
+                                                imageVector = Icons.Default.Delete,
+                                                contentDescription = stringResource(R.string.delete),
+                                                tint = MaterialTheme.colorScheme.onErrorContainer
+                                            )
+                                        }
+                                    }
                                 }
                             },
                             dismissContent = {
-                                ItemRow(
-                                    item = item,
-                                    onTap = { openAdjustDialog(item) },
-                                    onIncrement = { viewModel.incrementQuantity(item) },
-                                    onDecrement = { viewModel.decrementQuantity(item) }
-                                )
+                                Surface(color = MaterialTheme.colorScheme.surface) {
+                                    ItemRow(
+                                        item = item,
+                                        onTap = { openAdjustDialog(item) },
+                                        onIncrement = { viewModel.incrementQuantity(item) },
+                                        onDecrement = { viewModel.decrementQuantity(item) }
+                                    )
+                                }
                             }
                         )
                     }
