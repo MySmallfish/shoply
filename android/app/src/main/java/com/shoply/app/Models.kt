@@ -88,6 +88,7 @@ data class PendingInvite(
     val token: String,
     val creatorName: String,
     val creatorEmail: String,
+    val creatorAvatarIcon: String,
     val createdAt: Long
 )
 
@@ -196,6 +197,7 @@ fun DocumentSnapshot.toPendingInvite(): PendingInvite? {
     val listTitle = getString("listTitle") ?: "Shoply list"
     val creatorName = getString("creatorName") ?: ""
     val creatorEmail = getString("creatorEmail") ?: ""
+    val creatorAvatarIcon = getString("creatorAvatarIcon") ?: ""
     val createdAt = getTimestamp("createdAt")?.toDate()?.time ?: 0L
     return PendingInvite(
         id = id,
@@ -207,6 +209,7 @@ fun DocumentSnapshot.toPendingInvite(): PendingInvite? {
         token = token,
         creatorName = creatorName,
         creatorEmail = creatorEmail,
+        creatorAvatarIcon = creatorAvatarIcon,
         createdAt = createdAt
     )
 }

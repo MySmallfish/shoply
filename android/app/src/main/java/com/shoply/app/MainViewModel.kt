@@ -285,38 +285,57 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             onError(text(R.string.valid_email_required))
             return
         }
-        val creatorName = _user.value?.displayName ?: ""
-        val creatorEmail = _user.value?.email ?: ""
+        val fallbackCreatorName = _user.value?.displayName ?: ""
+        val fallbackCreatorEmail = _user.value?.email ?: ""
         val listTitle = _lists.value.firstOrNull { it.id == listId }?.title ?: text(R.string.shoply_list_title)
         val token = UUID.randomUUID().toString().replace("-", "")
         val emailLower = trimmed.lowercase()
         val allowedEmails = if (trimmed == emailLower) listOf(trimmed) else listOf(trimmed, emailLower)
         val inviteRef = db.collection("lists").document(listId).collection("invites").document()
-        val data = hashMapOf(
-            "listId" to listId,
-            "listTitle" to listTitle,
-            "email" to trimmed,
-            "emailLower" to emailLower,
-            "allowedEmails" to allowedEmails,
-            "role" to role,
-            "status" to "pending",
-            "token" to token,
-            "createdBy" to userId,
-            "createdAt" to com.google.firebase.firestore.FieldValue.serverTimestamp(),
-            "creatorName" to creatorName,
-            "creatorEmail" to creatorEmail
-        )
-        val inboxData = HashMap(data).apply {
-            put("listInviteId", inviteRef.id)
+
+        fun sendWithCreator(creatorName: String, creatorEmail: String, creatorAvatarIcon: String) {
+            val data = hashMapOf(
+                "listId" to listId,
+                "listTitle" to listTitle,
+                "email" to trimmed,
+                "emailLower" to emailLower,
+                "allowedEmails" to allowedEmails,
+                "role" to role,
+                "status" to "pending",
+                "token" to token,
+                "createdBy" to userId,
+                "createdAt" to com.google.firebase.firestore.FieldValue.serverTimestamp(),
+                "creatorName" to creatorName,
+                "creatorEmail" to creatorEmail
+            )
+            if (creatorAvatarIcon.isNotBlank()) {
+                data["creatorAvatarIcon"] = creatorAvatarIcon
+            }
+            val inboxData = HashMap(data).apply {
+                put("listInviteId", inviteRef.id)
+            }
+            val inboxRef = db.collection("invitesInbox").document(token)
+            db.runBatch { batch ->
+                batch.set(inviteRef, data)
+                batch.set(inboxRef, inboxData)
+            }
+                .addOnSuccessListener { onInviteCreated(token) }
+                .addOnFailureListener { error ->
+                    onError(error.localizedMessage ?: text(R.string.unable_send_invite))
+                }
         }
-        val inboxRef = db.collection("invitesInbox").document(token)
-        db.runBatch { batch ->
-            batch.set(inviteRef, data)
-            batch.set(inboxRef, inboxData)
-        }
-            .addOnSuccessListener { onInviteCreated(token) }
-            .addOnFailureListener { error ->
-                onError(error.localizedMessage ?: text(R.string.unable_send_invite))
+
+        db.collection("users").document(userId).get()
+            .addOnSuccessListener { doc ->
+                val name = doc.getString("displayName")?.takeIf { it.isNotBlank() } ?: fallbackCreatorName
+                val emailFromProfile = doc.getString("notificationEmail")?.takeIf { it.isNotBlank() }
+                    ?: doc.getString("email")?.takeIf { it.isNotBlank() }
+                val email = emailFromProfile ?: fallbackCreatorEmail
+                val avatarIcon = doc.getString("avatarIcon").orEmpty()
+                sendWithCreator(name, email, avatarIcon)
+            }
+            .addOnFailureListener {
+                sendWithCreator(fallbackCreatorName, fallbackCreatorEmail, "")
             }
     }
 

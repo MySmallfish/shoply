@@ -400,13 +400,17 @@ class ListRepository {
 
     fun ensureUserProfile(user: FirebaseUser) {
         val email = user.email ?: ""
+        val name = (user.displayName ?: "").trim()
         val data = hashMapOf(
-            "displayName" to (user.displayName ?: ""),
             "email" to email,
             "emailLower" to email.lowercase(),
             "photoURL" to (user.photoUrl?.toString() ?: ""),
             "lastSeenAt" to FieldValue.serverTimestamp()
         )
+
+        if (name.isNotEmpty()) {
+            data["displayName"] = name
+        }
 
         if (user.metadata?.creationTimestamp == user.metadata?.lastSignInTimestamp) {
             data["createdAt"] = FieldValue.serverTimestamp()

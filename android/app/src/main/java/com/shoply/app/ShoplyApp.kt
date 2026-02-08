@@ -133,6 +133,8 @@ import com.google.android.gms.common.api.ApiException
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.UserProfileChangeRequest
 import java.io.ByteArrayOutputStream
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -1304,6 +1306,52 @@ private fun PendingInviteRow(invite: PendingInvite, onAccept: () -> Unit) {
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
+
+            val showCreator = invite.creatorName.isNotBlank()
+                || invite.creatorEmail.isNotBlank()
+                || invite.creatorAvatarIcon.isNotBlank()
+            if (showCreator) {
+                Spacer(modifier = Modifier.height(6.dp))
+                val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    val creatorText = @Composable {
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            horizontalAlignment = if (isRtl) Alignment.End else Alignment.Start
+                        ) {
+                            if (invite.creatorName.isNotBlank()) {
+                                Text(
+                                    invite.creatorName,
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                )
+                            }
+                            if (invite.creatorEmail.isNotBlank()) {
+                                Text(
+                                    invite.creatorEmail,
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                )
+                            }
+                        }
+                    }
+
+                    val creatorAvatar = @Composable {
+                        if (invite.creatorAvatarIcon.isNotBlank()) {
+                            ItemIconView(icon = invite.creatorAvatarIcon, size = 20.dp)
+                            Spacer(modifier = Modifier.width(8.dp))
+                        }
+                    }
+
+                    if (isRtl) {
+                        creatorText()
+                        creatorAvatar()
+                    } else {
+                        creatorAvatar()
+                        creatorText()
+                    }
+                }
+            }
         }
 
         Button(onClick = onAccept) {
@@ -2083,11 +2131,23 @@ private fun SettingsDialog(
                     onValueChange = { fontScaleDraft = it },
                     valueRange = 0.85f..1.25f
                 )
-                Text(
-                    text = stringResource(R.string.font_size_preview),
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = textAlign
-                )
+                val baseDensity = LocalDensity.current
+                val previewDensity = remember(fontScaleDraft, baseDensity.density) {
+                    androidx.compose.ui.unit.Density(baseDensity.density, fontScale = fontScaleDraft)
+                }
+                CompositionLocalProvider(LocalDensity provides previewDensity) {
+                    Text(
+                        text = stringResource(R.string.font_size_preview),
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = textAlign
+                    )
+                    Text(
+                        text = stringResource(R.string.add_first_item),
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = textAlign,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
+                }
             }
         },
         confirmButton = {
@@ -2107,9 +2167,28 @@ private fun SettingsDialog(
                     db.collection("users").document(userId)
                         .set(updates, SetOptions.merge())
                         .addOnSuccessListener {
-                            onFontScaleChange(fontScaleDraft)
-                            saving = false
-                            onDismiss()
+                            val authUser = FirebaseAuth.getInstance().currentUser
+                            val request = UserProfileChangeRequest.Builder()
+                                .setDisplayName(fullName.trim())
+                                .build()
+                            authUser?.updateProfile(request)
+                                ?.addOnCompleteListener {
+                                    onFontScaleChange(fontScaleDraft)
+                                    saving = false
+                                    if (!it.isSuccessful) {
+                                        Toast.makeText(
+                                            context,
+                                            context.getString(R.string.save_failed),
+                                            Toast.LENGTH_LONG
+                                        ).show()
+                                    }
+                                    onDismiss()
+                                }
+                                ?: run {
+                                    onFontScaleChange(fontScaleDraft)
+                                    saving = false
+                                    onDismiss()
+                                }
                         }
                         .addOnFailureListener { error ->
                             saving = false
