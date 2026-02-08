@@ -29,8 +29,13 @@ struct ItemDetailsForm: View {
             TextField(L10n.string("Name", language: appLanguage), text: $draft.name)
                 .multilineTextAlignment(alignment)
             HStack(spacing: 8) {
-                barcodeField(alignment: alignment, canEditBarcode: canEditBarcode)
-                barcodeButtons
+                if isRTL {
+                    barcodeButtons
+                    barcodeField(alignment: alignment, canEditBarcode: canEditBarcode)
+                } else {
+                    barcodeField(alignment: alignment, canEditBarcode: canEditBarcode)
+                    barcodeButtons
+                }
             }
         } header: {
             sectionHeader("Item", isRTL: isRTL)
@@ -396,7 +401,7 @@ private struct IconActionRow: View {
                         Label(L10n.string("Camera", language: language), systemImage: "camera")
                             .frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(.plain)
                 }
 
                 if UIImagePickerController.isSourceTypeAvailable(.photoLibrary) {
@@ -404,7 +409,7 @@ private struct IconActionRow: View {
                         Label(L10n.string("Library", language: language), systemImage: "photo")
                             .frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(.plain)
                 }
             }
             .frame(maxWidth: .infinity)
