@@ -220,7 +220,7 @@ fun ListScreen(viewModel: MainViewModel) {
     var showInvite by remember { mutableStateOf(false) }
     var showCreateList by remember { mutableStateOf(false) }
     var showScanner by remember { mutableStateOf(false) }
-    var showBarcodeScanner by remember { mutableStateOf(false) }
+    var barcodeScanTarget by remember { mutableStateOf<BarcodeScanTarget?>(null) }
     var showJoin by remember { mutableStateOf(false) }
     var showRenameList by remember { mutableStateOf(false) }
     var renameListText by remember { mutableStateOf("") }
@@ -265,6 +265,10 @@ fun ListScreen(viewModel: MainViewModel) {
 
     LaunchedEffect(scanCode) {
         val code = scanCode ?: return@LaunchedEffect
+        if (code.isBlank()) {
+            scanCode = null
+            return@LaunchedEffect
+        }
         newItemName = code
         selectedSuggestion = null
         val item = items.firstOrNull { it.barcode == code }
@@ -392,7 +396,8 @@ fun ListScreen(viewModel: MainViewModel) {
                                 selectedSuggestion = null
                             } else {
                                 scannedDraft = ItemDetailsDraft(name = trimmed)
-                                scanCode = ""
+                                newItemName = ""
+                                selectedSuggestion = null
                                 showAddFromScan = true
                             }
                         }
@@ -668,13 +673,28 @@ fun ListScreen(viewModel: MainViewModel) {
         )
     }
 
-    if (showBarcodeScanner) {
+    barcodeScanTarget?.let { target ->
         ScannerDialog(
-            onDismiss = { showBarcodeScanner = false },
+            onDismiss = { barcodeScanTarget = null },
             onCode = { code ->
-                detailsDraft = detailsDraft.copy(barcode = code)
-                detailsAllowBarcodeEdit = false
-                showBarcodeScanner = false
+                when (target) {
+                    BarcodeScanTarget.DETAILS -> {
+                        detailsDraft = detailsDraft.copy(barcode = code)
+                        detailsAllowBarcodeEdit = false
+                    }
+
+                    BarcodeScanTarget.DRAFT -> {
+                        val match = viewModel.catalogItemForBarcode(code)
+                        scannedDraft = scannedDraft.copy(
+                            name = if (scannedDraft.name.isBlank()) match?.name.orEmpty() else scannedDraft.name,
+                            barcode = code,
+                            price = if (scannedDraft.price.isBlank()) match?.price?.toString().orEmpty() else scannedDraft.price,
+                            description = if (scannedDraft.description.isBlank()) match?.description.orEmpty() else scannedDraft.description,
+                            icon = if (scannedDraft.icon.isBlank()) match?.icon.orEmpty() else scannedDraft.icon
+                        )
+                    }
+                }
+                barcodeScanTarget = null
             }
         )
     }
@@ -726,9 +746,10 @@ fun ListScreen(viewModel: MainViewModel) {
 
     if (showAddFromScan) {
         AddScannedItemDialog(
-            barcode = scanCode ?: "",
+            barcode = scannedDraft.barcode,
             draft = scannedDraft,
             onDraftChange = { scannedDraft = it },
+            onScanBarcode = { barcodeScanTarget = BarcodeScanTarget.DRAFT },
             onDismiss = {
                 showAddFromScan = false
                 scanCode = null
@@ -754,7 +775,7 @@ fun ListScreen(viewModel: MainViewModel) {
             onDraftChange = { detailsDraft = it },
             onDismiss = { showDetails = false },
             allowBarcodeEdit = detailsAllowBarcodeEdit,
-            onScanBarcode = { showBarcodeScanner = true },
+            onScanBarcode = { barcodeScanTarget = BarcodeScanTarget.DETAILS },
             onSave = {
                 val itemId = detailsItemId
                 if (itemId != null) {
@@ -1596,12 +1617,18 @@ private enum class QuantityMode {
     NEED
 }
 
+private enum class BarcodeScanTarget {
+    DETAILS,
+    DRAFT
+}
+
 
 @Composable
 private fun AddScannedItemDialog(
     barcode: String,
     draft: ItemDetailsDraft,
     onDraftChange: (ItemDetailsDraft) -> Unit,
+    onScanBarcode: () -> Unit,
     onDismiss: () -> Unit,
     onAdd: () -> Unit
 ) {
@@ -1619,18 +1646,19 @@ private fun AddScannedItemDialog(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                 }
-                BarcodeField(
-                    value = draft.barcode,
-                    onValueChange = { onDraftChange(draft.copy(barcode = it)) },
-                    textAlign = textAlign,
-                    initiallyEditable = barcode.isBlank()
-                )
-                Spacer(modifier = Modifier.height(8.dp))
                 TextField(
                     value = draft.name,
                     onValueChange = { onDraftChange(draft.copy(name = it)) },
                     placeholder = { PlaceholderText(stringResource(R.string.name), textAlign) },
                     textStyle = textStyle
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                BarcodeField(
+                    value = draft.barcode,
+                    onValueChange = { onDraftChange(draft.copy(barcode = it)) },
+                    textAlign = textAlign,
+                    initiallyEditable = barcode.isBlank(),
+                    onScan = onScanBarcode
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 TextField(
@@ -1766,6 +1794,7 @@ private fun IconPicker(
         Spacer(modifier = Modifier.height(8.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             OutlinedButton(
@@ -1779,13 +1808,13 @@ private fun IconPicker(
                     } else {
                         cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
                     }
-                }
+                },
+                modifier = Modifier.weight(1f)
             ) {
                 Icon(imageVector = Icons.Default.CameraAlt, contentDescription = null)
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(stringResource(R.string.camera))
             }
-            Spacer(modifier = Modifier.width(8.dp))
             OutlinedButton(
                 onClick = {
                     val intent = Intent(
@@ -1793,14 +1822,20 @@ private fun IconPicker(
                         MediaStore.Images.Media.EXTERNAL_CONTENT_URI
                     )
                     libraryLauncher.launch(intent)
-                }
+                },
+                modifier = Modifier.weight(1f)
             ) {
                 Icon(imageVector = Icons.Default.PhotoLibrary, contentDescription = null)
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(stringResource(R.string.library))
             }
-            Spacer(modifier = Modifier.weight(1f))
-            if (icon.isNotBlank()) {
+        }
+
+        if (icon.isNotBlank()) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
                 TextButton(onClick = { onIconChange("") }) {
                     Text(stringResource(R.string.remove_icon))
                 }
