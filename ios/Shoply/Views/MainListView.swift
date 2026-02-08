@@ -4,6 +4,8 @@ struct MainListView: View {
     @EnvironmentObject private var session: SessionViewModel
     @StateObject private var listViewModel = ListViewModel()
 
+    @AppStorage("appLanguage") private var appLanguage = "he"
+
     @State private var newItemName = ""
     @State private var showScanner = false
     @State private var showInvite = false
@@ -23,6 +25,11 @@ struct MainListView: View {
     @State private var previewIcon: PreviewIcon?
     @StateObject private var shakeDetector = ShakeDetector()
     @State private var didOpenDebugAdjustSheet = false
+    @State private var renameListTarget: ShoppingList?
+    @State private var renameListTitle = ""
+    @State private var showRenameList = false
+    @State private var deleteListTarget: ShoppingList?
+    @State private var showDeleteListConfirm = false
 
     var body: some View {
         NavigationStack {
@@ -195,6 +202,51 @@ struct MainListView: View {
         } message: {
             Text(session.mergeActionError ?? NSLocalizedString("Unable to merge lists.", comment: ""))
         }
+        .alert(
+            Text(L10n.string("Rename List", language: appLanguage)),
+            isPresented: $showRenameList
+        ) {
+            TextField(L10n.string("List name", language: appLanguage), text: $renameListTitle)
+            Button(L10n.string("Cancel", language: appLanguage), role: .cancel) {
+                renameListTarget = nil
+            }
+            Button(L10n.string("Save", language: appLanguage)) {
+                if let target = renameListTarget {
+                    session.renameList(listId: target.id, title: renameListTitle)
+                }
+                renameListTarget = nil
+            }
+        }
+        .confirmationDialog(
+            Text(L10n.string("Delete List", language: appLanguage)),
+            isPresented: $showDeleteListConfirm,
+            titleVisibility: .visible
+        ) {
+            Button(L10n.string("Delete", language: appLanguage), role: .destructive) {
+                if let target = deleteListTarget {
+                    session.deleteList(listId: target.id)
+                }
+                deleteListTarget = nil
+            }
+            Button(L10n.string("Cancel", language: appLanguage), role: .cancel) {
+                deleteListTarget = nil
+            }
+        } message: {
+            if let target = deleteListTarget {
+                Text(String(format: L10n.string("delete_list_confirm_message", language: appLanguage), target.title))
+            }
+        }
+        .alert(
+            Text(L10n.string("List action failed", language: appLanguage)),
+            isPresented: Binding(
+                get: { session.listManagementError != nil },
+                set: { if !$0 { session.clearListManagementError() } }
+            )
+        ) {
+            Button(L10n.string("OK", language: appLanguage)) { session.clearListManagementError() }
+        } message: {
+            Text(session.listManagementError ?? "")
+        }
         .overlay(alignment: .bottom) {
             if let undoAction = listViewModel.undoAction {
                 UndoToastView(
@@ -213,7 +265,17 @@ struct MainListView: View {
             ListSwitcherView(
                 lists: session.lists,
                 selectedListId: session.selectedListId,
+                currentUserId: session.user?.uid,
                 onSelect: { session.selectList($0.id) },
+                onRename: { list in
+                    renameListTarget = list
+                    renameListTitle = list.title
+                    showRenameList = true
+                },
+                onDelete: { list in
+                    deleteListTarget = list
+                    showDeleteListConfirm = true
+                },
                 onCreate: { showCreateList = true },
                 onJoin: { showJoin = true }
             )

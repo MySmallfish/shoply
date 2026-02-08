@@ -55,6 +55,10 @@
 
 "Lists" = "רשימות";
 "Join with Link" = "הצטרף עם קישור";
+"Rename List" = "שנה שם רשימה";
+"Delete List" = "מחק רשימה";
+"delete_list_confirm_message" = "פעולה זו תמחק לצמיתות את \"%@\".";
+"List action failed" = "פעולת רשימה נכשלה";
 
 "Merge lists?" = "למזג רשימות?";
 "Merge" = "מיזוג";

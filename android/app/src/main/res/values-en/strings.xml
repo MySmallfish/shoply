@@ -29,6 +29,12 @@
     <string name="lists">Lists</string>
     <string name="new_list">New List</string>
     <string name="join_with_link">Join with Link</string>
+    <string name="list_name">List name</string>
+    <string name="rename_list">Rename List</string>
+    <string name="delete_list">Delete List</string>
+    <string name="delete_list_title">Delete List?</string>
+    <string name="delete_list_confirm_message">This will permanently delete "%1$s".</string>
+    <string name="delete_list_failed">Unable to delete list.</string>
 
     <string name="invite_title">Invite</string>
     <string name="email">Email</string>

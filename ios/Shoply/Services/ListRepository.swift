@@ -127,6 +127,7 @@ final class ListRepository {
     func mergeLists(
         sourceListId: String,
         targetListId: String,
+        actingUserId: String,
         completion: @escaping (Result<Void, Error>) -> Void
     ) {
         let sourceRef = db.collection("lists").document(sourceListId).collection("items")
@@ -164,7 +165,7 @@ final class ListRepository {
                 }
 
                 if added == 0 {
-                    self.deleteList(listId: sourceListId, completion: completion)
+                    self.deleteList(listId: sourceListId, ownerId: actingUserId, completion: completion)
                     return
                 }
 
@@ -173,7 +174,52 @@ final class ListRepository {
                         completion(.failure(error))
                         return
                     }
-                    self.deleteList(listId: sourceListId, completion: completion)
+                    self.deleteList(listId: sourceListId, ownerId: actingUserId, completion: completion)
+                }
+            }
+        }
+    }
+
+    func deleteList(
+        listId: String,
+        ownerId: String,
+        completion: @escaping (Result<Void, Error>) -> Void
+    ) {
+        let listRef = db.collection("lists").document(listId)
+
+        deleteCollection(listRef.collection("items")) { [weak self] itemsError in
+            guard let self else { return }
+            if let itemsError {
+                completion(.failure(itemsError))
+                return
+            }
+            self.deleteCollection(listRef.collection("invites")) { invitesError in
+                if let invitesError {
+                    completion(.failure(invitesError))
+                    return
+                }
+                self.deleteMembersExceptOwner(listRef: listRef, ownerId: ownerId) { membersError in
+                    if let membersError {
+                        completion(.failure(membersError))
+                        return
+                    }
+                    self.deleteInvitesInbox(listId: listId) { inboxError in
+                        if let inboxError {
+                            completion(.failure(inboxError))
+                            return
+                        }
+                        listRef.delete { listError in
+                            if let listError {
+                                completion(.failure(listError))
+                                return
+                            }
+                            // Best-effort cleanup. Once the list doc is gone this is mostly unreachable,
+                            // but we remove the owner member doc to avoid leaving an orphaned document.
+                            listRef.collection("members").document(ownerId).delete { _ in
+                                completion(.success(()))
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -548,35 +594,50 @@ final class ListRepository {
         return normalized.isEmpty ? "" : "name:\(normalized)"
     }
 
-    private func deleteList(listId: String, completion: @escaping (Result<Void, Error>) -> Void) {
-        let listRef = db.collection("lists").document(listId)
-
-        deleteCollection(listRef.collection("items")) { [weak self] itemsError in
+    private func deleteMembersExceptOwner(
+        listRef: DocumentReference,
+        ownerId: String,
+        completion: @escaping (Error?) -> Void
+    ) {
+        listRef.collection("members").getDocuments { [weak self] snapshot, error in
             guard let self else { return }
-            if let itemsError {
-                completion(.failure(itemsError))
+            if let error {
+                completion(error)
                 return
             }
-            self.deleteCollection(listRef.collection("invites")) { invitesError in
-                if let invitesError {
-                    completion(.failure(invitesError))
-                    return
-                }
-                listRef.delete { listError in
-                    if let listError {
-                        completion(.failure(listError))
-                        return
-                    }
-                    self.deleteCollection(listRef.collection("members")) { membersError in
-                        if let membersError {
-                            completion(.failure(membersError))
-                        } else {
-                            completion(.success(()))
-                        }
-                    }
-                }
+            let docs = (snapshot?.documents ?? []).filter { $0.documentID != ownerId }
+            guard !docs.isEmpty else {
+                completion(nil)
+                return
+            }
+            let batch = self.db.batch()
+            docs.forEach { batch.deleteDocument($0.reference) }
+            batch.commit { commitError in
+                completion(commitError)
             }
         }
+    }
+
+    private func deleteInvitesInbox(listId: String, completion: @escaping (Error?) -> Void) {
+        db.collection("invitesInbox")
+            .whereField("listId", isEqualTo: listId)
+            .getDocuments { [weak self] snapshot, error in
+                guard let self else { return }
+                if let error {
+                    completion(error)
+                    return
+                }
+                let docs = snapshot?.documents ?? []
+                guard !docs.isEmpty else {
+                    completion(nil)
+                    return
+                }
+                let batch = self.db.batch()
+                docs.forEach { batch.deleteDocument($0.reference) }
+                batch.commit { commitError in
+                    completion(commitError)
+                }
+            }
     }
 
     private func deleteCollection(_ collection: CollectionReference, completion: @escaping (Error?) -> Void) {

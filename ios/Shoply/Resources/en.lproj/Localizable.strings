@@ -55,6 +55,10 @@
 
 "Lists" = "Lists";
 "Join with Link" = "Join with Link";
+"Rename List" = "Rename List";
+"Delete List" = "Delete List";
+"delete_list_confirm_message" = "This will permanently delete \"%@\".";
+"List action failed" = "List action failed";
 
 "Merge lists?" = "Merge lists?";
 "Merge" = "Merge";

@@ -13,6 +13,7 @@ final class SessionViewModel: ObservableObject {
     @Published var inviteActionError: String?
     @Published var mergePrompt: MergePrompt?
     @Published var mergeActionError: String?
+    @Published var listManagementError: String?
 
     private let authService = AuthService()
     private let repository = ListRepository()
@@ -242,7 +243,12 @@ final class SessionViewModel: ObservableObject {
 
     func mergeInvitedList(_ prompt: MergePrompt) {
         mergeActionError = nil
-        repository.mergeLists(sourceListId: prompt.existingListId, targetListId: prompt.invitedListId) { [weak self] result in
+        guard let userId = user?.uid else { return }
+        repository.mergeLists(
+            sourceListId: prompt.existingListId,
+            targetListId: prompt.invitedListId,
+            actingUserId: userId
+        ) { [weak self] result in
             Task { @MainActor in
                 switch result {
                 case .success:
@@ -270,6 +276,40 @@ final class SessionViewModel: ObservableObject {
                 }
             }
         }
+    }
+
+    func renameList(listId: String, title: String) {
+        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        listManagementError = nil
+        repository.updateListTitle(listId: listId, title: trimmed) { [weak self] error in
+            Task { @MainActor in
+                if let error {
+                    self?.listManagementError = error.localizedDescription
+                }
+            }
+        }
+    }
+
+    func deleteList(listId: String) {
+        guard let userId = user?.uid else { return }
+        listManagementError = nil
+        repository.deleteList(listId: listId, ownerId: userId) { [weak self] result in
+            Task { @MainActor in
+                switch result {
+                case .success:
+                    if self?.selectedListId == listId {
+                        self?.selectedListId = nil
+                    }
+                case .failure(let error):
+                    self?.listManagementError = error.localizedDescription
+                }
+            }
+        }
+    }
+
+    func clearListManagementError() {
+        listManagementError = nil
     }
 
     private func checkMergeConflictIfNeeded() {

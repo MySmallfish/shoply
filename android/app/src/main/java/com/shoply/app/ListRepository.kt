@@ -114,7 +114,12 @@ class ListRepository {
             .addOnFailureListener { error -> onComplete(error) }
     }
 
-    fun mergeLists(sourceListId: String, targetListId: String, onComplete: (Exception?) -> Unit) {
+    fun mergeLists(
+        sourceListId: String,
+        targetListId: String,
+        actingUserId: String,
+        onComplete: (Exception?) -> Unit
+    ) {
         val sourceRef = db.collection("lists").document(sourceListId).collection("items")
         val targetRef = db.collection("lists").document(targetListId).collection("items")
 
@@ -140,12 +145,12 @@ class ListRepository {
                         }
 
                         if (added == 0) {
-                            deleteList(sourceListId, onComplete)
+                            deleteList(sourceListId, actingUserId, onComplete)
                             return@addOnSuccessListener
                         }
 
                         batch.commit()
-                            .addOnSuccessListener { deleteList(sourceListId, onComplete) }
+                            .addOnSuccessListener { deleteList(sourceListId, actingUserId, onComplete) }
                             .addOnFailureListener { error -> onComplete(error) }
                     }
                     .addOnFailureListener { error -> onComplete(error) }
@@ -472,7 +477,7 @@ class ListRepository {
         return if (normalized.isBlank()) null else "name:$normalized"
     }
 
-    private fun deleteList(listId: String, onComplete: (Exception?) -> Unit) {
+    fun deleteList(listId: String, ownerId: String, onComplete: (Exception?) -> Unit) {
         val listRef = db.collection("lists").document(listId)
         deleteCollection(listRef.collection("items")) { itemsError ->
             if (itemsError != null) {
@@ -484,15 +489,66 @@ class ListRepository {
                     onComplete(invitesError)
                     return@deleteCollection
                 }
-                listRef.delete()
-                    .addOnSuccessListener {
-                        deleteCollection(listRef.collection("members")) { membersError ->
-                            onComplete(membersError)
-                        }
+                deleteMembersExceptOwner(listRef, ownerId) { membersError ->
+                    if (membersError != null) {
+                        onComplete(membersError)
+                        return@deleteMembersExceptOwner
                     }
-                    .addOnFailureListener { error -> onComplete(error) }
+                    deleteInvitesInbox(listId) { inboxError ->
+                        if (inboxError != null) {
+                            onComplete(inboxError)
+                            return@deleteInvitesInbox
+                        }
+                        listRef.delete()
+                            .addOnSuccessListener {
+                                // Best-effort cleanup to avoid leaving an orphaned owner member doc.
+                                listRef.collection("members").document(ownerId).delete()
+                                    .addOnCompleteListener { onComplete(null) }
+                            }
+                            .addOnFailureListener { error -> onComplete(error) }
+                    }
+                }
             }
         }
+    }
+
+    private fun deleteMembersExceptOwner(
+        listRef: com.google.firebase.firestore.DocumentReference,
+        ownerId: String,
+        onComplete: (Exception?) -> Unit
+    ) {
+        listRef.collection("members").get()
+            .addOnSuccessListener { snapshot ->
+                val docs = snapshot.documents.filter { it.id != ownerId }
+                if (docs.isEmpty()) {
+                    onComplete(null)
+                    return@addOnSuccessListener
+                }
+                val batch = db.batch()
+                docs.forEach { batch.delete(it.reference) }
+                batch.commit()
+                    .addOnSuccessListener { onComplete(null) }
+                    .addOnFailureListener { error -> onComplete(error) }
+            }
+            .addOnFailureListener { error -> onComplete(error) }
+    }
+
+    private fun deleteInvitesInbox(listId: String, onComplete: (Exception?) -> Unit) {
+        db.collection("invitesInbox")
+            .whereEqualTo("listId", listId)
+            .get()
+            .addOnSuccessListener { snapshot ->
+                if (snapshot.isEmpty) {
+                    onComplete(null)
+                    return@addOnSuccessListener
+                }
+                val batch = db.batch()
+                snapshot.documents.forEach { batch.delete(it.reference) }
+                batch.commit()
+                    .addOnSuccessListener { onComplete(null) }
+                    .addOnFailureListener { error -> onComplete(error) }
+            }
+            .addOnFailureListener { error -> onComplete(error) }
     }
 
     private fun deleteCollection(

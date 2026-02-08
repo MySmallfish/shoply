@@ -29,6 +29,12 @@
     <string name="lists">רשימות</string>
     <string name="new_list">רשימה חדשה</string>
     <string name="join_with_link">הצטרף עם קישור</string>
+    <string name="list_name">שם הרשימה</string>
+    <string name="rename_list">שנה שם רשימה</string>
+    <string name="delete_list">מחק רשימה</string>
+    <string name="delete_list_title">למחוק רשימה?</string>
+    <string name="delete_list_confirm_message">פעולה זו תמחק לצמיתות את "%1$s".</string>
+    <string name="delete_list_failed">לא ניתן למחוק רשימה.</string>
 
     <string name="invite_title">הזמנה</string>
     <string name="email">אימייל</string>

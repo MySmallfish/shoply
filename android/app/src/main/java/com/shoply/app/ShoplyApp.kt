@@ -222,6 +222,9 @@ fun ListScreen(viewModel: MainViewModel) {
     var showScanner by remember { mutableStateOf(false) }
     var showBarcodeScanner by remember { mutableStateOf(false) }
     var showJoin by remember { mutableStateOf(false) }
+    var showRenameList by remember { mutableStateOf(false) }
+    var renameListText by remember { mutableStateOf("") }
+    var showDeleteListConfirm by remember { mutableStateOf(false) }
     var showMembers by remember { mutableStateOf(false) }
     var showPendingInvites by remember { mutableStateOf(false) }
     var showAddFromScan by remember { mutableStateOf(false) }
@@ -313,6 +316,16 @@ fun ListScreen(viewModel: MainViewModel) {
                         lists = lists,
                         selectedListId = selectedListId,
                         onSelect = { viewModel.selectList(it.id) },
+                        canRenameSelected = currentRole == "owner" || currentRole == "editor",
+                        canDeleteSelected = currentRole == "owner",
+                        onRenameSelected = {
+                            val currentTitle = lists.firstOrNull { it.id == selectedListId }?.title.orEmpty()
+                            renameListText = currentTitle
+                            showRenameList = true
+                        },
+                        onDeleteSelected = {
+                            showDeleteListConfirm = true
+                        },
                         onCreate = { showCreateList = true },
                         onJoin = { showJoin = true }
                     )
@@ -593,6 +606,58 @@ fun ListScreen(viewModel: MainViewModel) {
         )
     }
 
+    if (showRenameList) {
+        val textAlign = inputTextAlign()
+        val textStyle = LocalTextStyle.current.copy(textAlign = textAlign)
+        AlertDialog(
+            onDismissRequest = { showRenameList = false },
+            title = { Text(stringResource(R.string.rename_list)) },
+            text = {
+                TextField(
+                    value = renameListText,
+                    onValueChange = { renameListText = it },
+                    placeholder = { PlaceholderText(stringResource(R.string.list_name), textAlign) },
+                    textStyle = textStyle
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.renameSelectedList(renameListText)
+                    showRenameList = false
+                }) {
+                    Text(stringResource(R.string.save))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRenameList = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
+
+    if (showDeleteListConfirm) {
+        val currentTitle = lists.firstOrNull { it.id == selectedListId }?.title.orEmpty()
+        AlertDialog(
+            onDismissRequest = { showDeleteListConfirm = false },
+            title = { Text(stringResource(R.string.delete_list_title)) },
+            text = { Text(stringResource(R.string.delete_list_confirm_message, currentTitle)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.deleteSelectedList()
+                    showDeleteListConfirm = false
+                }) {
+                    Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteListConfirm = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
+
     if (showScanner) {
         ScannerDialog(
             onDismiss = { showScanner = false },
@@ -832,6 +897,10 @@ private fun ListDropdown(
     lists: List<ShoppingList>,
     selectedListId: String?,
     onSelect: (ShoppingList) -> Unit,
+    canRenameSelected: Boolean,
+    canDeleteSelected: Boolean,
+    onRenameSelected: () -> Unit,
+    onDeleteSelected: () -> Unit,
     onCreate: () -> Unit,
     onJoin: () -> Unit
 ) {
@@ -858,6 +927,27 @@ private fun ListDropdown(
                 )
             }
             Divider()
+            if (selectedListId != null && (canRenameSelected || canDeleteSelected)) {
+                if (canRenameSelected) {
+                    androidx.compose.material3.DropdownMenuItem(
+                        text = { Text(stringResource(R.string.rename_list)) },
+                        onClick = {
+                            expanded = false
+                            onRenameSelected()
+                        }
+                    )
+                }
+                if (canDeleteSelected) {
+                    androidx.compose.material3.DropdownMenuItem(
+                        text = { Text(stringResource(R.string.delete_list), color = MaterialTheme.colorScheme.error) },
+                        onClick = {
+                            expanded = false
+                            onDeleteSelected()
+                        }
+                    )
+                }
+                Divider()
+            }
             androidx.compose.material3.DropdownMenuItem(
                 text = { Text(stringResource(R.string.new_list)) },
                 onClick = {

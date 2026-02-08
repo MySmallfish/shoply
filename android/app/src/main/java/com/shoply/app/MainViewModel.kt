@@ -417,7 +417,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun mergeInvitedList(prompt: MergePrompt) {
         _inviteActionError.value = null
-        repo.mergeLists(prompt.existingListId, prompt.invitedListId) { error ->
+        val userId = _user.value?.uid ?: return
+        repo.mergeLists(prompt.existingListId, prompt.invitedListId, userId) { error ->
             if (error != null) {
                 val message = error.localizedMessage ?: text(R.string.unable_merge_lists)
                 _inviteActionError.value = "${text(R.string.merge_failed)}: $message"
@@ -439,6 +440,31 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             } else {
                 _mergePrompt.value = null
                 pendingInviteContext = null
+            }
+        }
+    }
+
+    fun renameSelectedList(title: String) {
+        val listId = _selectedListId.value ?: return
+        val trimmed = title.trim()
+        if (trimmed.isEmpty()) return
+        _inviteActionError.value = null
+        repo.updateListTitle(listId, trimmed) { error ->
+            if (error != null) {
+                _inviteActionError.value = error.localizedMessage ?: text(R.string.rename_failed)
+            }
+        }
+    }
+
+    fun deleteSelectedList() {
+        val listId = _selectedListId.value ?: return
+        val userId = _user.value?.uid ?: return
+        _inviteActionError.value = null
+        repo.deleteList(listId, userId) { error ->
+            if (error != null) {
+                _inviteActionError.value = error.localizedMessage ?: text(R.string.delete_list_failed)
+            } else if (_selectedListId.value == listId) {
+                _selectedListId.value = null
             }
         }
     }
