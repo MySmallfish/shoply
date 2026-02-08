@@ -13,13 +13,15 @@ struct InviteView: View {
     @State private var showShareSheet = false
 
     var body: some View {
+        let isRTL = layoutDirection == .rightToLeft
         NavigationStack {
             Form {
                 Section("Invite") {
                     TextField("Email", text: $email)
                         .keyboardType(.emailAddress)
                         .textInputAutocapitalization(.never)
-                        .multilineTextAlignment(.leading)
+                        .multilineTextAlignment(isRTL ? .trailing : .leading)
+                        .environment(\.layoutDirection, .leftToRight)
 
                     Picker("Role", selection: $role) {
                         Text("Editor").tag("editor")

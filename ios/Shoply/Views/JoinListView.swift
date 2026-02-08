@@ -8,12 +8,14 @@ struct JoinListView: View {
     @State private var input = ""
 
     var body: some View {
+        let isRTL = layoutDirection == .rightToLeft
         NavigationStack {
             Form {
                 Section("Invite link or token") {
                     TextField("Paste invite link", text: $input)
                         .textInputAutocapitalization(.never)
-                        .multilineTextAlignment(.leading)
+                        .multilineTextAlignment(isRTL ? .trailing : .leading)
+                        .environment(\.layoutDirection, .leftToRight)
                 }
             }
             .navigationTitle("")

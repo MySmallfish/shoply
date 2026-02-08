@@ -8,11 +8,13 @@ struct CreateListView: View {
     @State private var title = ""
 
     var body: some View {
+        let isRTL = layoutDirection == .rightToLeft
         NavigationStack {
             Form {
                 Section("List name") {
                     TextField("e.g. Grocery", text: $title)
-                        .multilineTextAlignment(.leading)
+                        .multilineTextAlignment(isRTL ? .trailing : .leading)
+                        .environment(\.layoutDirection, .leftToRight)
                 }
             }
             .navigationTitle("")
