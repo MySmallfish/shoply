@@ -115,3 +115,18 @@
 "Scan Barcode" = "Scan barcode";
 "Delete" = "Delete";
 "Edit" = "Edit";
+
+"Settings" = "Settings";
+"Close" = "Close";
+"Save failed" = "Save failed";
+"Profile" = "Profile";
+"Full Name" = "Full Name";
+"Notification Email" = "Notification Email";
+"Signed in as %@" = "Signed in as %@";
+"Remove Photo" = "Remove Photo";
+"Display" = "Display";
+"Font Size" = "Font Size";
+"Small" = "Small";
+"Default" = "Default";
+"Large" = "Large";
+"Font size preview" = "Font size preview";

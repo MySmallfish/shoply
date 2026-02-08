@@ -51,11 +51,15 @@ struct AdjustQuantityView: View {
                 .environment(\.layoutDirection, .leftToRight)
 
                 Picker("Mode", selection: $mode) {
-                    ForEach(QuantityMode.allCases) { selection in
+                    // Keep the order stable across languages (SwiftUI mirroring has been flaky in sheets):
+                    // Bought on the left, Need on the right.
+                    let options: [QuantityMode] = [.bought, .need]
+                    ForEach(options) { selection in
                         Text(selection.titleKey).tag(selection)
                     }
                 }
                 .pickerStyle(.segmented)
+                .environment(\.layoutDirection, .leftToRight)
 
                 HStack {
                     if isRTL { Spacer(minLength: 0) }
@@ -68,8 +72,8 @@ struct AdjustQuantityView: View {
 
                 Text("How much?")
                     .font(.system(size: 14, weight: .semibold))
-                    // "Leading" is the start edge: left in LTR, right in RTL.
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .frame(maxWidth: .infinity, alignment: isRTL ? .trailing : .leading)
+                    .environment(\.layoutDirection, .leftToRight)
 
                 HStack(spacing: 24) {
                     if isRTL {

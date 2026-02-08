@@ -13,6 +13,7 @@ struct MainListView: View {
     @State private var showJoin = false
     @State private var showMembers = false
     @State private var showPendingInvites = false
+    @State private var showSettings = false
     @State private var showAddFromScan = false
     @State private var scannedBarcode = ""
     @State private var scannedDraft = ItemDetailsDraft()
@@ -32,7 +33,7 @@ struct MainListView: View {
     @State private var showDeleteListConfirm = false
 
     var body: some View {
-        NavigationStack {
+        let base = NavigationStack {
             VStack(spacing: 0) {
                 header
 
@@ -56,208 +57,223 @@ struct MainListView: View {
                 }
             }
         }
-        .onAppear {
-            bindIfNeeded()
-            shakeDetector.onShake = { listViewModel.undoLastDeletion() }
-            shakeDetector.start()
-        }
-        .onDisappear {
-            shakeDetector.stop()
-        }
-        .onChange(of: session.selectedListId) { _ in
-            bindIfNeeded()
-        }
-        .onChange(of: listViewModel.lastScannedBarcode) { code in
-            handleScan(code: code)
-        }
-        .onChange(of: newItemName) { value in
-            if let suggestion = selectedSuggestion,
-               normalizedName(value) != suggestion.normalizedName {
-                selectedSuggestion = nil
+
+        let lifecycle = base
+            .onAppear {
+                bindIfNeeded()
+                shakeDetector.onShake = { listViewModel.undoLastDeletion() }
+                shakeDetector.start()
             }
-        }
-        .onChange(of: listViewModel.undoAction) { action in
-            undoTask?.cancel()
-            guard let action else { return }
-            undoTask = Task {
-                try? await Task.sleep(nanoseconds: 4_000_000_000)
-                await MainActor.run {
-                    if listViewModel.undoAction == action {
-                        listViewModel.clearUndo()
+            .onDisappear {
+                shakeDetector.stop()
+            }
+            .onChange(of: session.selectedListId) { _ in
+                bindIfNeeded()
+            }
+            .onChange(of: listViewModel.lastScannedBarcode) { code in
+                handleScan(code: code)
+            }
+            .onChange(of: newItemName) { value in
+                if let suggestion = selectedSuggestion,
+                   normalizedName(value) != suggestion.normalizedName {
+                    selectedSuggestion = nil
+                }
+            }
+            .onChange(of: listViewModel.undoAction) { action in
+                undoTask?.cancel()
+                guard let action else { return }
+                undoTask = Task {
+                    try? await Task.sleep(nanoseconds: 4_000_000_000)
+                    await MainActor.run {
+                        if listViewModel.undoAction == action {
+                            listViewModel.clearUndo()
+                        }
                     }
                 }
             }
-        }
-#if DEBUG
-        .onChange(of: listViewModel.items.count) { _ in
-            guard !didOpenDebugAdjustSheet else { return }
-            guard ProcessInfo.processInfo.arguments.contains("DEBUG_OPEN_ADJUST") else { return }
-            guard adjustItem == nil else { return }
-            guard !listViewModel.items.isEmpty else { return }
 
-            didOpenDebugAdjustSheet = true
-            adjustItem = listViewModel.items.first(where: { ($0.icon ?? "").isEmpty == false }) ?? listViewModel.items.first
-        }
+#if DEBUG
+        let lifecycleWithDebug = lifecycle
+            .onChange(of: listViewModel.items.count) { _ in
+                guard !didOpenDebugAdjustSheet else { return }
+                guard ProcessInfo.processInfo.arguments.contains("DEBUG_OPEN_ADJUST") else { return }
+                guard adjustItem == nil else { return }
+                guard !listViewModel.items.isEmpty else { return }
+
+                didOpenDebugAdjustSheet = true
+                adjustItem = listViewModel.items.first(where: { ($0.icon ?? "").isEmpty == false }) ?? listViewModel.items.first
+            }
+#else
+        let lifecycleWithDebug = lifecycle
 #endif
-        .sheet(isPresented: $showScanner) {
-            ScannerView { code in
-                listViewModel.handleScan(barcode: code)
-                showScanner = false
+        let sheets = lifecycleWithDebug
+            .sheet(isPresented: $showScanner) {
+                ScannerView { code in
+                    listViewModel.handleScan(barcode: code)
+                    showScanner = false
+                }
             }
-        }
-        .sheet(isPresented: $showInvite) {
-            InviteView()
-                .environmentObject(session)
-        }
-        .sheet(isPresented: $showCreateList) {
-            CreateListView()
-                .environmentObject(session)
-        }
-        .sheet(isPresented: $showJoin) {
-            JoinListView()
-                .environmentObject(session)
-        }
-        .sheet(isPresented: $showMembers) {
-            MembersView()
-                .environmentObject(session)
-        }
-        .sheet(isPresented: $showPendingInvites) {
-            PendingInvitesView()
-                .environmentObject(session)
-        }
-        .sheet(isPresented: $showAddFromScan, onDismiss: {
-            listViewModel.clearScan()
-        }) {
-            AddScannedItemView(barcode: scannedBarcode, draft: $scannedDraft) { draft in
-                addItemFromDraft(draft)
+            .sheet(isPresented: $showInvite) {
+                InviteView()
+                    .environmentObject(session)
+            }
+            .sheet(isPresented: $showCreateList) {
+                CreateListView()
+                    .environmentObject(session)
+            }
+            .sheet(isPresented: $showJoin) {
+                JoinListView()
+                    .environmentObject(session)
+            }
+            .sheet(isPresented: $showMembers) {
+                MembersView()
+                    .environmentObject(session)
+            }
+            .sheet(isPresented: $showPendingInvites) {
+                PendingInvitesView()
+                    .environmentObject(session)
+            }
+            .sheet(isPresented: $showSettings) {
+                SettingsView()
+                    .environmentObject(session)
+            }
+            .sheet(isPresented: $showAddFromScan, onDismiss: {
                 listViewModel.clearScan()
-            }
-        }
-        .sheet(isPresented: $showDetails, onDismiss: {
-            detailsItemId = nil
-        }) {
-            AddItemDetailsView(
-                draft: $detailsDraft,
-                allowBarcodeEdit: detailsDraft.barcode.isEmpty,
-                titleKey: detailsItemId == nil ? "Add Item" : "Edit Item",
-                primaryTitleKey: detailsItemId == nil ? "Add" : "Save"
-            ) { draft in
-                if let itemId = detailsItemId {
-                    listViewModel.updateItemDetails(itemId: itemId, draft: draft)
-                } else {
+            }) {
+                AddScannedItemView(barcode: scannedBarcode, draft: $scannedDraft) { draft in
                     addItemFromDraft(draft)
-                    newItemName = ""
-                    selectedSuggestion = nil
+                    listViewModel.clearScan()
                 }
+            }
+            .sheet(isPresented: $showDetails, onDismiss: {
                 detailsItemId = nil
-            }
-        }
-        .sheet(item: $adjustItem, onDismiss: {
-            listViewModel.clearScan()
-        }) { item in
-            AdjustQuantityView(item: item, onApply: { delta in
-                listViewModel.adjustQuantity(item, delta: delta)
-            }, onEditDetails: {
-                adjustItem = nil
-                openDetails(for: item)
-            }, onIconTap: { icon in
-                previewIcon = PreviewIcon(icon: icon)
-            })
-            .presentationDetents([.medium])
-            .presentationDragIndicator(.visible)
-        }
-        .fullScreenCover(item: $previewIcon) { item in
-            IconPreviewView(icon: item.icon)
-        }
-        .confirmationDialog(
-            "Merge lists?",
-            isPresented: Binding(
-                get: { session.mergePrompt != nil },
-                set: { if !$0 { session.mergePrompt = nil } }
-            )
-        ) {
-            Button("Merge") {
-                if let prompt = session.mergePrompt {
-                    session.mergeInvitedList(prompt)
+            }) {
+                AddItemDetailsView(
+                    draft: $detailsDraft,
+                    allowBarcodeEdit: detailsDraft.barcode.isEmpty,
+                    titleKey: detailsItemId == nil ? "Add Item" : "Edit Item",
+                    primaryTitleKey: detailsItemId == nil ? "Add" : "Save"
+                ) { draft in
+                    if let itemId = detailsItemId {
+                        listViewModel.updateItemDetails(itemId: itemId, draft: draft)
+                    } else {
+                        addItemFromDraft(draft)
+                        newItemName = ""
+                        selectedSuggestion = nil
+                    }
+                    detailsItemId = nil
                 }
             }
-            Button("Keep Separate") {
-                if let prompt = session.mergePrompt {
-                    session.keepInviteSeparate(prompt)
-                }
+            .sheet(item: $adjustItem, onDismiss: {
+                listViewModel.clearScan()
+            }) { item in
+                AdjustQuantityView(item: item, onApply: { delta in
+                    listViewModel.adjustQuantity(item, delta: delta)
+                }, onEditDetails: {
+                    adjustItem = nil
+                    openDetails(for: item)
+                }, onIconTap: { icon in
+                    previewIcon = PreviewIcon(icon: icon)
+                })
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
             }
-        } message: {
-            if let prompt = session.mergePrompt {
-                Text(String(format: NSLocalizedString("merge_prompt_message", comment: ""), prompt.existingListTitle, prompt.invitedListTitle))
+            .fullScreenCover(item: $previewIcon) { item in
+                IconPreviewView(icon: item.icon)
             }
-        }
-        .alert(
-            "Merge failed",
-            isPresented: Binding(
-                get: { session.mergeActionError != nil },
-                set: { if !$0 { session.mergeActionError = nil } }
-            )
-        ) {
-            Button("OK") { session.mergeActionError = nil }
-        } message: {
-            Text(session.mergeActionError ?? NSLocalizedString("Unable to merge lists.", comment: ""))
-        }
-        .alert(
-            Text(L10n.string("Rename List", language: appLanguage)),
-            isPresented: $showRenameList
-        ) {
-            TextField(L10n.string("List name", language: appLanguage), text: $renameListTitle)
-            Button(L10n.string("Cancel", language: appLanguage), role: .cancel) {
-                renameListTarget = nil
-            }
-            Button(L10n.string("Save", language: appLanguage)) {
-                if let target = renameListTarget {
-                    session.renameList(listId: target.id, title: renameListTitle)
-                }
-                renameListTarget = nil
-            }
-        }
-        .confirmationDialog(
-            Text(L10n.string("Delete List", language: appLanguage)),
-            isPresented: $showDeleteListConfirm,
-            titleVisibility: .visible
-        ) {
-            Button(L10n.string("Delete", language: appLanguage), role: .destructive) {
-                if let target = deleteListTarget {
-                    session.deleteList(listId: target.id)
-                }
-                deleteListTarget = nil
-            }
-            Button(L10n.string("Cancel", language: appLanguage), role: .cancel) {
-                deleteListTarget = nil
-            }
-        } message: {
-            if let target = deleteListTarget {
-                Text(String(format: L10n.string("delete_list_confirm_message", language: appLanguage), target.title))
-            }
-        }
-        .alert(
-            Text(L10n.string("List action failed", language: appLanguage)),
-            isPresented: Binding(
-                get: { session.listManagementError != nil },
-                set: { if !$0 { session.clearListManagementError() } }
-            )
-        ) {
-            Button(L10n.string("OK", language: appLanguage)) { session.clearListManagementError() }
-        } message: {
-            Text(session.listManagementError ?? "")
-        }
-        .overlay(alignment: .bottom) {
-            if let undoAction = listViewModel.undoAction {
-                UndoToastView(
-                    title: undoAction.wasBought
-                        ? NSLocalizedString("Marked unbought", comment: "")
-                        : NSLocalizedString("Marked bought", comment: ""),
-                    onUndo: { listViewModel.undoLastToggle() },
-                    onDismiss: { listViewModel.clearUndo() }
+
+        let dialogs = sheets
+            .confirmationDialog(
+                "Merge lists?",
+                isPresented: Binding(
+                    get: { session.mergePrompt != nil },
+                    set: { if !$0 { session.mergePrompt = nil } }
                 )
+            ) {
+                Button("Merge") {
+                    if let prompt = session.mergePrompt {
+                        session.mergeInvitedList(prompt)
+                    }
+                }
+                Button("Keep Separate") {
+                    if let prompt = session.mergePrompt {
+                        session.keepInviteSeparate(prompt)
+                    }
+                }
+            } message: {
+                if let prompt = session.mergePrompt {
+                    Text(String(format: NSLocalizedString("merge_prompt_message", comment: ""), prompt.existingListTitle, prompt.invitedListTitle))
+                }
             }
-        }
+            .alert(
+                "Merge failed",
+                isPresented: Binding(
+                    get: { session.mergeActionError != nil },
+                    set: { if !$0 { session.mergeActionError = nil } }
+                )
+            ) {
+                Button("OK") { session.mergeActionError = nil }
+            } message: {
+                Text(session.mergeActionError ?? NSLocalizedString("Unable to merge lists.", comment: ""))
+            }
+            .alert(
+                Text(L10n.string("Rename List", language: appLanguage)),
+                isPresented: $showRenameList
+            ) {
+                TextField(L10n.string("List name", language: appLanguage), text: $renameListTitle)
+                Button(L10n.string("Cancel", language: appLanguage), role: .cancel) {
+                    renameListTarget = nil
+                }
+                Button(L10n.string("Save", language: appLanguage)) {
+                    if let target = renameListTarget {
+                        session.renameList(listId: target.id, title: renameListTitle)
+                    }
+                    renameListTarget = nil
+                }
+            }
+            .confirmationDialog(
+                Text(L10n.string("Delete List", language: appLanguage)),
+                isPresented: $showDeleteListConfirm,
+                titleVisibility: .visible
+            ) {
+                Button(L10n.string("Delete", language: appLanguage), role: .destructive) {
+                    if let target = deleteListTarget {
+                        session.deleteList(listId: target.id)
+                    }
+                    deleteListTarget = nil
+                }
+                Button(L10n.string("Cancel", language: appLanguage), role: .cancel) {
+                    deleteListTarget = nil
+                }
+            } message: {
+                if let target = deleteListTarget {
+                    Text(String(format: L10n.string("delete_list_confirm_message", language: appLanguage), target.title))
+                }
+            }
+            .alert(
+                Text(L10n.string("List action failed", language: appLanguage)),
+                isPresented: Binding(
+                    get: { session.listManagementError != nil },
+                    set: { if !$0 { session.clearListManagementError() } }
+                )
+            ) {
+                Button(L10n.string("OK", language: appLanguage)) { session.clearListManagementError() }
+            } message: {
+                Text(session.listManagementError ?? "")
+            }
+            .overlay(alignment: .bottom) {
+                if let undoAction = listViewModel.undoAction {
+                    UndoToastView(
+                        title: undoAction.wasBought
+                            ? NSLocalizedString("Marked unbought", comment: "")
+                            : NSLocalizedString("Marked bought", comment: ""),
+                        onUndo: { listViewModel.undoLastToggle() },
+                        onDismiss: { listViewModel.clearUndo() }
+                    )
+                }
+            }
+
+        return dialogs
     }
 
     private var header: some View {
@@ -293,6 +309,9 @@ struct MainListView: View {
                     headerIcon(systemName: "barcode.viewfinder")
                 }
                 Menu {
+                    Button(L10n.string("Settings", language: appLanguage)) {
+                        showSettings = true
+                    }
                     Button(pendingInvitesTitle) {
                         showPendingInvites = true
                     }

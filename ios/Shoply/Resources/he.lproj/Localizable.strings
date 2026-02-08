@@ -115,3 +115,18 @@
 "Scan Barcode" = "סרוק ברקוד";
 "Delete" = "מחק";
 "Edit" = "ערוך";
+
+"Settings" = "הגדרות";
+"Close" = "סגור";
+"Save failed" = "השמירה נכשלה";
+"Profile" = "פרופיל";
+"Full Name" = "שם מלא";
+"Notification Email" = "אימייל להתראות";
+"Signed in as %@" = "מחובר כ-%@";
+"Remove Photo" = "הסר תמונה";
+"Display" = "תצוגה";
+"Font Size" = "גודל גופן";
+"Small" = "קטן";
+"Default" = "ברירת מחדל";
+"Large" = "גדול";
+"Font size preview" = "תצוגה מקדימה לגודל גופן";

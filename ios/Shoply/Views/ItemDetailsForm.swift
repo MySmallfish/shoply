@@ -13,35 +13,47 @@ struct ItemDetailsForm: View {
 
     var body: some View {
         let isRTL = appLanguage.hasPrefix("he") || appLanguage.hasPrefix("ar") || layoutDirection == .rightToLeft
-        // In RTL, "leading" is the physical right edge; use semantic alignment so it works in both directions.
-        let alignment: TextAlignment = .leading
         let canEditBarcode = allowBarcodeEdit || isEditingBarcode
 
-        itemSection(isRTL: isRTL, alignment: alignment, canEditBarcode: canEditBarcode)
-        detailsSection(isRTL: isRTL, alignment: alignment)
-        IconPickerSection(icon: $draft.icon, language: appLanguage)
+        itemSection(isRTL: isRTL, canEditBarcode: canEditBarcode)
+        detailsSection(isRTL: isRTL)
+        IconPickerSection(icon: $draft.icon, language: appLanguage, isRTL: isRTL)
     }
 
     @ViewBuilder
-    private func itemSection(isRTL: Bool, alignment: TextAlignment, canEditBarcode: Bool) -> some View {
+    private func itemSection(isRTL: Bool, canEditBarcode: Bool) -> some View {
         Section {
             TextField(L10n.string("Name", language: appLanguage), text: $draft.name)
-                .multilineTextAlignment(alignment)
+                .multilineTextAlignment(isRTL ? .trailing : .leading)
+                // Force physical alignment independent of flaky RTL propagation in sheets/forms.
+                .environment(\.layoutDirection, .leftToRight)
             HStack(spacing: 8) {
-                barcodeField(alignment: alignment, canEditBarcode: canEditBarcode)
-                barcodeButtons
+                if isRTL {
+                    barcodeButtons
+                    barcodeField(isRTL: isRTL, canEditBarcode: canEditBarcode)
+                        .frame(maxWidth: .infinity)
+                } else {
+                    barcodeField(isRTL: isRTL, canEditBarcode: canEditBarcode)
+                        .frame(maxWidth: .infinity)
+                    barcodeButtons
+                }
             }
+            // Prevent SwiftUI from auto-mirroring the order. We position explicitly above.
+            .environment(\.layoutDirection, .leftToRight)
         } header: {
-            sectionHeader("Item")
+            sectionHeader("Item", isRTL: isRTL)
         }
     }
 
-    private func barcodeField(alignment: TextAlignment, canEditBarcode: Bool) -> some View {
-        TextField(L10n.string("Barcode", language: appLanguage), text: $draft.barcode)
-            .keyboardType(.numberPad)
-            .disabled(!canEditBarcode)
-            .foregroundColor(canEditBarcode ? .primary : .secondary)
-            .multilineTextAlignment(alignment)
+    private func barcodeField(isRTL: Bool, canEditBarcode: Bool) -> some View {
+        UIKitAlignedTextField(
+            placeholder: L10n.string("Barcode", language: appLanguage),
+            text: $draft.barcode,
+            keyboardType: .numberPad,
+            isEnabled: canEditBarcode,
+            textAlignment: isRTL ? .right : .left,
+            textColor: canEditBarcode ? .label : .secondaryLabel
+        )
     }
 
     @ViewBuilder
@@ -74,31 +86,87 @@ struct ItemDetailsForm: View {
                 .accessibilityLabel(L10n.string("Edit", language: appLanguage))
             }
         }
+        .environment(\.layoutDirection, .leftToRight)
     }
 
     @ViewBuilder
-    private func detailsSection(isRTL: Bool, alignment: TextAlignment) -> some View {
+    private func detailsSection(isRTL: Bool) -> some View {
         Section {
-            TextField(L10n.string("Price", language: appLanguage), text: $draft.priceText)
-                .keyboardType(.decimalPad)
-                .multilineTextAlignment(alignment)
+            UIKitAlignedTextField(
+                placeholder: L10n.string("Price", language: appLanguage),
+                text: $draft.priceText,
+                keyboardType: .decimalPad,
+                isEnabled: true,
+                textAlignment: isRTL ? .right : .left,
+                textColor: .label
+            )
             TextField(L10n.string("Description", language: appLanguage), text: $draft.descriptionText, axis: .vertical)
-                .multilineTextAlignment(alignment)
+                .multilineTextAlignment(isRTL ? .trailing : .leading)
+                .environment(\.layoutDirection, .leftToRight)
         } header: {
-            sectionHeader("Details")
+            sectionHeader("Details", isRTL: isRTL)
         }
     }
 
-    private func sectionHeader(_ key: String) -> some View {
+    private func sectionHeader(_ key: String, isRTL: Bool) -> some View {
         Text(L10n.string(key, language: appLanguage))
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: isRTL ? .trailing : .leading)
             .textCase(nil)
+            .environment(\.layoutDirection, .leftToRight)
+    }
+}
+
+private struct UIKitAlignedTextField: UIViewRepresentable {
+    let placeholder: String
+    @Binding var text: String
+    let keyboardType: UIKeyboardType
+    let isEnabled: Bool
+    let textAlignment: NSTextAlignment
+    let textColor: UIColor
+
+    func makeUIView(context: Context) -> UITextField {
+        let field = UITextField()
+        field.borderStyle = .none
+        field.adjustsFontForContentSizeCategory = true
+        field.font = UIFont.preferredFont(forTextStyle: .body)
+        field.addTarget(context.coordinator, action: #selector(Coordinator.textDidChange), for: .editingChanged)
+        return field
+    }
+
+    func updateUIView(_ uiView: UITextField, context: Context) {
+        if uiView.text != text {
+            uiView.text = text
+        }
+        uiView.placeholder = placeholder
+        uiView.keyboardType = keyboardType
+        // Keep numeric entry stable (digits flow LTR) while allowing right alignment for RTL UIs.
+        uiView.semanticContentAttribute = .forceLeftToRight
+        uiView.isEnabled = isEnabled
+        uiView.textAlignment = textAlignment
+        uiView.textColor = textColor
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(text: $text)
+    }
+
+    final class Coordinator: NSObject {
+        private var text: Binding<String>
+
+        init(text: Binding<String>) {
+            self.text = text
+        }
+
+        @objc func textDidChange(_ sender: UITextField) {
+            text.wrappedValue = sender.text ?? ""
+        }
     }
 }
 
 private struct IconPickerSection: View {
     @Binding var icon: String
     let language: String
+    let isRTL: Bool
     @State private var permissionAlert: PermissionAlert?
 
     private let stockIcons = ["🧺", "🥛", "🍞", "🧀", "🍎", "🧴"]
@@ -131,12 +199,14 @@ private struct IconPickerSection: View {
             if !icon.isEmpty {
                 ItemIconView(icon: icon, size: 48)
                     .padding(.top, 4)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .frame(maxWidth: .infinity, alignment: isRTL ? .trailing : .leading)
+                    .environment(\.layoutDirection, .leftToRight)
             }
         } header: {
             Text(L10n.string("Icon", language: language))
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(maxWidth: .infinity, alignment: isRTL ? .trailing : .leading)
                 .textCase(nil)
+                .environment(\.layoutDirection, .leftToRight)
         }
     }
 
@@ -363,7 +433,7 @@ private struct IconActionRow: View {
                     Button(action: onCameraTap) {
                         Label(L10n.string("Camera", language: language), systemImage: "camera")
                             .frame(maxWidth: .infinity)
-                            .foregroundColor(.accentColor)
+                            .foregroundStyle(.tint)
                     }
                     .buttonStyle(.plain)
                 }
@@ -372,7 +442,7 @@ private struct IconActionRow: View {
                     Button(action: onLibraryTap) {
                         Label(L10n.string("Library", language: language), systemImage: "photo")
                             .frame(maxWidth: .infinity)
-                            .foregroundColor(.accentColor)
+                            .foregroundStyle(.tint)
                     }
                     .buttonStyle(.plain)
                 }
