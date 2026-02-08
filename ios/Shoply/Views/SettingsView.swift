@@ -1,4 +1,5 @@
 import AVFoundation
+import FirebaseAuth
 import FirebaseFirestore
 import Photos
 import SwiftUI
@@ -189,17 +190,41 @@ struct SettingsView: View {
         guard let user = session.user else { return }
         isSaving = true
         errorMessage = nil
+        let trimmedName = fullName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedNotifyEmail = notificationEmail.trimmingCharacters(in: .whitespacesAndNewlines)
+
         var updates: [String: Any] = [
-            "displayName": fullName.trimmingCharacters(in: .whitespacesAndNewlines),
-            "notificationEmail": notificationEmail.trimmingCharacters(in: .whitespacesAndNewlines),
+            "displayName": trimmedName,
+            "notificationEmail": trimmedNotifyEmail,
             "updatedAt": FieldValue.serverTimestamp()
         ]
         updates["avatarIcon"] = avatarIcon.isEmpty ? FieldValue.delete() : avatarIcon
 
         db.collection("users").document(user.uid).setData(updates, merge: true) { error in
-            isSaving = false
             if let error {
+                isSaving = false
                 errorMessage = error.localizedDescription
+                return
+            }
+
+            // Keep FirebaseAuth's displayName in sync so new invites can read it even if
+            // they fall back to Auth (e.g. during the first app launch after sign-in).
+            if let authUser = Auth.auth().currentUser, authUser.uid == user.uid {
+                let request = authUser.createProfileChangeRequest()
+                request.displayName = trimmedName
+                request.commitChanges { commitError in
+                    DispatchQueue.main.async {
+                        isSaving = false
+                        if let commitError {
+                            errorMessage = commitError.localizedDescription
+                        } else {
+                            dismiss()
+                        }
+                    }
+                }
+            } else {
+                isSaving = false
+                dismiss()
             }
         }
     }

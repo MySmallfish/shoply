@@ -11,6 +11,7 @@ final class InviteService {
         createdBy: String,
         creatorName: String,
         creatorEmail: String,
+        creatorAvatarIcon: String,
         email: String,
         role: String,
         completion: @escaping (Result<String, Error>) -> Void
@@ -21,7 +22,7 @@ final class InviteService {
         let emailLower = email.lowercased()
         let allowedEmails = email == emailLower ? [email] : [email, emailLower]
         let now = FieldValue.serverTimestamp()
-        let data: [String: Any] = [
+        var data: [String: Any] = [
             "email": email,
             "emailLower": emailLower,
             "allowedEmails": allowedEmails,
@@ -35,6 +36,10 @@ final class InviteService {
             "creatorName": creatorName,
             "creatorEmail": creatorEmail
         ]
+
+        if !creatorAvatarIcon.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            data["creatorAvatarIcon"] = creatorAvatarIcon
+        }
 
         var inboxData = data
         inboxData["listInviteId"] = inviteRef.documentID

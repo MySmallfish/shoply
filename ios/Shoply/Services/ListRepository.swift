@@ -514,12 +514,16 @@ final class ListRepository {
         let email = user.email ?? ""
         let emailLower = email.lowercased()
         var data: [String: Any] = [
-            "displayName": user.displayName ?? "",
             "email": email,
             "emailLower": emailLower,
             "photoURL": user.photoURL?.absoluteString ?? "",
             "lastSeenAt": FieldValue.serverTimestamp()
         ]
+
+        let name = (user.displayName ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        if !name.isEmpty {
+            data["displayName"] = name
+        }
 
         if user.metadata.creationDate == user.metadata.lastSignInDate {
             data["createdAt"] = FieldValue.serverTimestamp()
@@ -676,6 +680,7 @@ final class ListRepository {
             token: token,
             creatorName: data["creatorName"] as? String ?? "",
             creatorEmail: data["creatorEmail"] as? String ?? "",
+            creatorAvatarIcon: data["creatorAvatarIcon"] as? String ?? "",
             createdAt: (data["createdAt"] as? Timestamp)?.dateValue()
         )
     }

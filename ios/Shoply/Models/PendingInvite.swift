@@ -10,5 +10,6 @@ struct PendingInvite: Identifiable {
     let token: String
     let creatorName: String
     let creatorEmail: String
+    let creatorAvatarIcon: String
     let createdAt: Date?
 }

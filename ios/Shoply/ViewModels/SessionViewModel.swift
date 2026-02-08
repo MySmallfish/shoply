@@ -79,8 +79,8 @@ final class SessionViewModel: ObservableObject {
             completion?(.failure(InviteError.noListSelected))
             return
         }
-        let creatorName = user?.displayName ?? ""
-        let creatorEmail = user?.email ?? ""
+        let fallbackName = user?.displayName ?? ""
+        let fallbackEmail = user?.email ?? ""
         let listTitle = lists.first(where: { $0.id == listId })?.title
             ?? NSLocalizedString("Shoply list", comment: "")
         let trimmed = email.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -88,16 +88,28 @@ final class SessionViewModel: ObservableObject {
             completion?(.failure(InviteError.invalidEmail))
             return
         }
-        inviteService.sendInvite(
-            listId: listId,
-            listTitle: listTitle,
-            createdBy: userId,
-            creatorName: creatorName,
-            creatorEmail: creatorEmail,
-            email: trimmed,
-            role: role
-        ) { result in
-            completion?(result)
+
+        let profileRef = Firestore.firestore().collection("users").document(userId)
+        profileRef.getDocument { [weak self] snapshot, error in
+            let data = snapshot?.data() ?? [:]
+            let creatorName = (data["displayName"] as? String).flatMap { $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : $0 } ?? fallbackName
+            let creatorEmail = (data["notificationEmail"] as? String).flatMap { $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : $0 } ?? fallbackEmail
+            let creatorAvatarIcon = (data["avatarIcon"] as? String) ?? ""
+
+            // If profile fetch failed, still attempt to send with fallbacks.
+            _ = error
+            self?.inviteService.sendInvite(
+                listId: listId,
+                listTitle: listTitle,
+                createdBy: userId,
+                creatorName: creatorName,
+                creatorEmail: creatorEmail,
+                creatorAvatarIcon: creatorAvatarIcon,
+                email: trimmed,
+                role: role
+            ) { result in
+                completion?(result)
+            }
         }
     }
 
