@@ -131,12 +131,12 @@ class ListRepository {
                         val batch = db.batch()
                         var added = 0
                         sourceSnapshot.documents.forEach { doc ->
-                            val data = doc.data
+                            val data = doc.data ?: return@forEach
                             val key = itemKey(data)
                             if (key.isNullOrEmpty() || existingKeys.contains(key)) {
                                 return@forEach
                             }
-                            val payload = HashMap(data).apply {
+                            val payload = HashMap<String, Any>(data).apply {
                                 put("createdAt", FieldValue.serverTimestamp())
                                 put("updatedAt", FieldValue.serverTimestamp())
                             }
