@@ -41,6 +41,7 @@ This file captures current project state, key decisions, build steps, and known 
 - If an invited list name matches an existing list, the user is prompted to merge or keep separate; keeping separate renames to `[listName] - [creator]`, merging removes the duplicate list.
 - Android invite send now surfaces errors when list/user/email is missing; FirebaseFunctions is used for acceptInvite.
 - Android shows a toast if acceptInvite fails (see `inviteActionError` flow).
+- Lists can be renamed/deleted from the list picker menu (owner only).
 
 ## Key Files and Responsibilities
 ### iOS
@@ -95,15 +96,15 @@ xcodebuild -project ios/Shoply.xcodeproj \
 Install/launch:
 ```
 xcrun simctl install 42E8C2C9-8425-4F06-98C6-7C10561B863B ios/build/DerivedData/Build/Products/Debug-iphonesimulator/Shoply.app
-xcrun simctl launch 42E8C2C9-8425-4F06-98C6-7C10561B863B com.shoply.app
+xcrun simctl launch 42E8C2C9-8425-4F06-98C6-7C10561B863B il.co.simplevision.shoply
 ```
 Active iPhone simulator used:
 - iPhone 17 Pro UDID: `42E8C2C9-8425-4F06-98C6-7C10561B863B`
 
 ### iOS (Device - Auto Deploy)
 Auto-run build + install + launch on every change without asking again (unless the user explicitly says to skip).
-Connected iPhone UDID:
-- `00008150-000D04523C84401C`
+Connected iPhone (use `xcrun devicectl list devices` and take the `Identifier`):
+- `1A91DE36-B1B3-592B-BA27-533A07F6ED37` (Yair Cohen’s iPhone)
 
 Build:
 ```
@@ -117,8 +118,8 @@ xcodebuild -project ios/Shoply.xcodeproj \
 ```
 Install + Launch:
 ```
-xcrun devicectl device install app --device 00008150-000D04523C84401C ios/build/DerivedData/Build/Products/Debug-iphoneos/Shoply.app
-xcrun devicectl device process launch --device 00008150-000D04523C84401C il.co.simplevision.shoply
+xcrun devicectl device install app --device 1A91DE36-B1B3-592B-BA27-533A07F6ED37 ios/build/DerivedData/Build/Products/Debug-iphoneos/Shoply.app
+xcrun devicectl device process launch --device 1A91DE36-B1B3-592B-BA27-533A07F6ED37 il.co.simplevision.shoply
 ```
 
 ### Android (Emulator)
@@ -139,6 +140,7 @@ export ANDROID_SDK_ROOT="/opt/homebrew/share/android-commandlinetools"
 export ANDROID_HOME="/opt/homebrew/share/android-commandlinetools"
 ```
 ```
+cd android
 ./gradlew :app:installDebug
 ```
 AVD used earlier: `RedoxApi35`.
