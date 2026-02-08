@@ -19,7 +19,7 @@ struct InviteView: View {
                     TextField("Email", text: $email)
                         .keyboardType(.emailAddress)
                         .textInputAutocapitalization(.never)
-                        .multilineTextAlignment(layoutDirection == .rightToLeft ? .trailing : .leading)
+                        .multilineTextAlignment(.leading)
 
                     Picker("Role", selection: $role) {
                         Text("Editor").tag("editor")
@@ -28,8 +28,21 @@ struct InviteView: View {
                     .pickerStyle(.segmented)
                 }
             }
-            .navigationTitle("Invite")
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .principal) {
+                    HStack {
+                        if layoutDirection == .rightToLeft {
+                            Spacer()
+                        }
+                        Text("Invite")
+                            .font(.headline)
+                        if layoutDirection == .leftToRight {
+                            Spacer()
+                        }
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Send") {
                         let trimmed = email.trimmingCharacters(in: .whitespacesAndNewlines)

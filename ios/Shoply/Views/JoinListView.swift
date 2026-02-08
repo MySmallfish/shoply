@@ -13,11 +13,24 @@ struct JoinListView: View {
                 Section("Invite link or token") {
                     TextField("Paste invite link", text: $input)
                         .textInputAutocapitalization(.never)
-                        .multilineTextAlignment(layoutDirection == .rightToLeft ? .trailing : .leading)
+                        .multilineTextAlignment(.leading)
                 }
             }
-            .navigationTitle("Join List")
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .principal) {
+                    HStack {
+                        if layoutDirection == .rightToLeft {
+                            Spacer()
+                        }
+                        Text("Join List")
+                            .font(.headline)
+                        if layoutDirection == .leftToRight {
+                            Spacer()
+                        }
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Join") {
                         if let token = extractToken(from: input) {

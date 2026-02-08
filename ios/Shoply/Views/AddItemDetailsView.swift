@@ -3,29 +3,33 @@ import SwiftUI
 struct AddItemDetailsView: View {
     @Binding var draft: ItemDetailsDraft
     private let allowBarcodeEdit: Bool
-    private let title: String
-    private let primaryTitle: String
+    private let titleKey: String
+    private let primaryTitleKey: String
     let onSave: (ItemDetailsDraft) -> Void
 
+    @AppStorage("appLanguage") private var appLanguage = "he"
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.layoutDirection) private var layoutDirection
     @State private var showBarcodeScanner = false
 
     init(
         draft: Binding<ItemDetailsDraft>,
         allowBarcodeEdit: Bool,
-        title: String = NSLocalizedString("Add Item", comment: ""),
-        primaryTitle: String = NSLocalizedString("Add", comment: ""),
+        titleKey: String = "Add Item",
+        primaryTitleKey: String = "Add",
         onSave: @escaping (ItemDetailsDraft) -> Void
     ) {
         self._draft = draft
         self.allowBarcodeEdit = allowBarcodeEdit
-        self.title = title
-        self.primaryTitle = primaryTitle
+        self.titleKey = titleKey
+        self.primaryTitleKey = primaryTitleKey
         self.onSave = onSave
     }
 
     var body: some View {
+        let isRTL = appLanguage.hasPrefix("he") || appLanguage.hasPrefix("ar")
+        let title = L10n.string(titleKey, language: appLanguage)
+        let primaryTitle = L10n.string(primaryTitleKey, language: appLanguage)
+        let cancelTitle = L10n.string("Cancel", language: appLanguage)
         NavigationStack {
             Form {
                 ItemDetailsForm(
@@ -39,17 +43,13 @@ struct AddItemDetailsView: View {
             .toolbar {
                 ToolbarItem(placement: .principal) {
                     HStack {
-                        if layoutDirection == .rightToLeft {
-                            Spacer()
-                        }
+                        if isRTL { Spacer() }
                         Text(title)
                             .font(.headline)
-                        if layoutDirection == .leftToRight {
-                            Spacer()
-                        }
+                        if !isRTL { Spacer() }
                     }
                 }
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .confirmationAction) {
                     Button(primaryTitle) {
                         onSave(draft)
                         dismiss()
@@ -58,13 +58,14 @@ struct AddItemDetailsView: View {
                     .buttonStyle(.borderedProminent)
                     .tint(.primary)
                 }
-                ToolbarItem(placement: .topBarLeading) {
-                    Button(NSLocalizedString("Cancel", comment: "")) {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(cancelTitle) {
                         dismiss()
                     }
                 }
             }
         }
+        .environment(\.layoutDirection, isRTL ? .rightToLeft : .leftToRight)
         .sheet(isPresented: $showBarcodeScanner) {
             ScannerView { code in
                 draft.barcode = code

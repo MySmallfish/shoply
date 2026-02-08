@@ -8,73 +8,129 @@ struct ItemDetailsForm: View {
     let allowBarcodeEdit: Bool
     let onScanBarcode: (() -> Void)?
     @Environment(\.layoutDirection) private var layoutDirection
+    @AppStorage("appLanguage") private var appLanguage = "he"
     @State private var isEditingBarcode = false
 
     var body: some View {
-        let alignment: TextAlignment = layoutDirection == .rightToLeft ? .trailing : .leading
+        let isRTL = appLanguage.hasPrefix("he") || appLanguage.hasPrefix("ar") || layoutDirection == .rightToLeft
+        let alignment: TextAlignment = isRTL ? .trailing : .leading
         let canEditBarcode = allowBarcodeEdit || isEditingBarcode
 
-        itemSection(alignment: alignment, canEditBarcode: canEditBarcode)
-        detailsSection(alignment: alignment)
-        IconPickerSection(icon: $draft.icon)
+        itemSection(isRTL: isRTL, alignment: alignment, canEditBarcode: canEditBarcode)
+        detailsSection(isRTL: isRTL, alignment: alignment)
+        IconPickerSection(icon: $draft.icon, language: appLanguage)
     }
 
     @ViewBuilder
-    private func itemSection(alignment: TextAlignment, canEditBarcode: Bool) -> some View {
-        Section("Item") {
-            TextField("Name", text: $draft.name)
+    private func itemSection(isRTL: Bool, alignment: TextAlignment, canEditBarcode: Bool) -> some View {
+        Section {
+            TextField(L10n.string("Name", language: appLanguage), text: $draft.name)
                 .multilineTextAlignment(alignment)
             HStack(spacing: 8) {
-                TextField("Barcode", text: $draft.barcode)
-                    .keyboardType(.numberPad)
-                    .disabled(!canEditBarcode)
-                    .foregroundColor(canEditBarcode ? .primary : .secondary)
-                    .multilineTextAlignment(alignment)
-
-                if let onScanBarcode {
-                    Button {
-                        onScanBarcode()
-                    } label: {
-                        Image(systemName: "barcode.viewfinder")
-                    }
-                    .accessibilityLabel(NSLocalizedString("Scan Barcode", comment: ""))
+                if isRTL {
+                    barcodeButtons
+                    barcodeField(alignment: alignment, canEditBarcode: canEditBarcode)
+                } else {
+                    barcodeField(alignment: alignment, canEditBarcode: canEditBarcode)
+                    barcodeButtons
                 }
+            }
+        } header: {
+            sectionHeader("Item", isRTL: isRTL)
+        }
+    }
 
-                if !draft.barcode.isEmpty {
-                    Button {
-                        UIPasteboard.general.string = draft.barcode
-                    } label: {
-                        Image(systemName: "doc.on.doc")
-                    }
-                    .accessibilityLabel(NSLocalizedString("Copy", comment: ""))
-                }
+    private func barcodeField(alignment: TextAlignment, canEditBarcode: Bool) -> some View {
+        TextField(L10n.string("Barcode", language: appLanguage), text: $draft.barcode)
+            .keyboardType(.numberPad)
+            .disabled(!canEditBarcode)
+            .foregroundColor(canEditBarcode ? .primary : .secondary)
+            .multilineTextAlignment(alignment)
+    }
 
-                if !allowBarcodeEdit && !isEditingBarcode {
-                    Button {
-                        isEditingBarcode = true
-                    } label: {
-                        Image(systemName: "pencil")
-                    }
-                    .accessibilityLabel(NSLocalizedString("Edit", comment: ""))
+    @ViewBuilder
+    private var barcodeButtons: some View {
+        let isRTL = appLanguage.hasPrefix("he") || appLanguage.hasPrefix("ar") || layoutDirection == .rightToLeft
+        if isRTL {
+            if !allowBarcodeEdit && !isEditingBarcode {
+                Button {
+                    isEditingBarcode = true
+                } label: {
+                    Image(systemName: "pencil")
                 }
+                .accessibilityLabel(L10n.string("Edit", language: appLanguage))
+            }
+
+            if !draft.barcode.isEmpty {
+                Button {
+                    UIPasteboard.general.string = draft.barcode
+                } label: {
+                    Image(systemName: "doc.on.doc")
+                }
+                .accessibilityLabel(L10n.string("Copy", language: appLanguage))
+            }
+
+            if let onScanBarcode {
+                Button {
+                    onScanBarcode()
+                } label: {
+                    Image(systemName: "barcode.viewfinder")
+                }
+                .accessibilityLabel(L10n.string("Scan Barcode", language: appLanguage))
+            }
+        } else {
+            if let onScanBarcode {
+                Button {
+                    onScanBarcode()
+                } label: {
+                    Image(systemName: "barcode.viewfinder")
+                }
+                .accessibilityLabel(L10n.string("Scan Barcode", language: appLanguage))
+            }
+
+            if !draft.barcode.isEmpty {
+                Button {
+                    UIPasteboard.general.string = draft.barcode
+                } label: {
+                    Image(systemName: "doc.on.doc")
+                }
+                .accessibilityLabel(L10n.string("Copy", language: appLanguage))
+            }
+
+            if !allowBarcodeEdit && !isEditingBarcode {
+                Button {
+                    isEditingBarcode = true
+                } label: {
+                    Image(systemName: "pencil")
+                }
+                .accessibilityLabel(L10n.string("Edit", language: appLanguage))
             }
         }
     }
 
     @ViewBuilder
-    private func detailsSection(alignment: TextAlignment) -> some View {
-        Section("Details") {
-            TextField("Price", text: $draft.priceText)
+    private func detailsSection(isRTL: Bool, alignment: TextAlignment) -> some View {
+        Section {
+            TextField(L10n.string("Price", language: appLanguage), text: $draft.priceText)
                 .keyboardType(.decimalPad)
                 .multilineTextAlignment(alignment)
-            TextField("Description", text: $draft.descriptionText, axis: .vertical)
+            TextField(L10n.string("Description", language: appLanguage), text: $draft.descriptionText, axis: .vertical)
                 .multilineTextAlignment(alignment)
+        } header: {
+            sectionHeader("Details", isRTL: isRTL)
         }
+    }
+
+    private func sectionHeader(_ key: String, isRTL: Bool) -> some View {
+        Text(L10n.string(key, language: appLanguage))
+            .frame(maxWidth: .infinity, alignment: isRTL ? .trailing : .leading)
+            .textCase(nil)
     }
 }
 
 private struct IconPickerSection: View {
     @Binding var icon: String
+    let language: String
     @State private var permissionAlert: PermissionAlert?
 
     private let stockIcons = ["🧺", "🥛", "🍞", "🧀", "🍎", "🧴"]
@@ -85,23 +141,36 @@ private struct IconPickerSection: View {
                 Alert(
                     title: Text(alert.title),
                     message: Text(alert.message),
-                    primaryButton: .default(Text(NSLocalizedString("Open Settings", comment: "")), action: {
+                    primaryButton: .default(Text(L10n.string("Open Settings", language: language)), action: {
                         openSettings()
                     }),
-                    secondaryButton: .cancel(Text(NSLocalizedString("Cancel", comment: "")))
+                    secondaryButton: .cancel(Text(L10n.string("Cancel", language: language)))
                 )
             }
     }
 
+    @ViewBuilder
     private var iconContent: some View {
-        Section("Icon") {
+        let isRTL = language.hasPrefix("he") || language.hasPrefix("ar")
+        Section {
             StockIconsRow(stockIcons: stockIcons, icon: $icon)
-            IconActionRow(icon: $icon, onCameraTap: handleCameraTap, onLibraryTap: handleLibraryTap)
+            IconActionRow(
+                icon: $icon,
+                language: language,
+                isRTL: isRTL,
+                onCameraTap: handleCameraTap,
+                onLibraryTap: handleLibraryTap
+            )
 
             if !icon.isEmpty {
                 ItemIconView(icon: icon, size: 48)
                     .padding(.top, 4)
+                    .frame(maxWidth: .infinity, alignment: isRTL ? .trailing : .leading)
             }
+        } header: {
+            Text(L10n.string("Icon", language: language))
+                .frame(maxWidth: .infinity, alignment: isRTL ? .trailing : .leading)
+                .textCase(nil)
         }
     }
 
@@ -174,19 +243,23 @@ private enum PermissionAlert: Identifiable {
     var title: String {
         switch self {
         case .camera:
-            return NSLocalizedString("Camera Access", comment: "")
+            return L10n.string("Camera Access", language: currentLanguage)
         case .library:
-            return NSLocalizedString("Photo Access", comment: "")
+            return L10n.string("Photo Access", language: currentLanguage)
         }
     }
 
     var message: String {
         switch self {
         case .camera:
-            return NSLocalizedString("Camera access is required to take item photos.", comment: "")
+            return L10n.string("Camera access is required to take item photos.", language: currentLanguage)
         case .library:
-            return NSLocalizedString("Photo library access is required to choose an item image.", comment: "")
+            return L10n.string("Photo library access is required to choose an item image.", language: currentLanguage)
         }
+    }
+
+    fileprivate var currentLanguage: String {
+        UserDefaults.standard.string(forKey: "appLanguage") ?? "he"
     }
 }
 
@@ -304,33 +377,61 @@ private struct StockIconsRow: View {
 
 private struct IconActionRow: View {
     @Binding var icon: String
+    let language: String
+    let isRTL: Bool
     let onCameraTap: () -> Void
     let onLibraryTap: () -> Void
 
     var body: some View {
         HStack(spacing: 12) {
-            if UIImagePickerController.isSourceTypeAvailable(.camera) {
-                Button(action: onCameraTap) {
-                    Label("Camera", systemImage: "camera")
+            if isRTL {
+                if !icon.isEmpty {
+                    Button(L10n.string("Remove Icon", language: language)) {
+                        icon = ""
+                    }
+                    .foregroundColor(.secondary)
+                    .buttonStyle(.borderless)
                 }
-                .buttonStyle(.borderless)
-            }
 
-            if UIImagePickerController.isSourceTypeAvailable(.photoLibrary) {
-                Button(action: onLibraryTap) {
-                    Label("Library", systemImage: "photo")
+                Spacer()
+
+                if UIImagePickerController.isSourceTypeAvailable(.photoLibrary) {
+                    Button(action: onLibraryTap) {
+                        Label(L10n.string("Library", language: language), systemImage: "photo")
+                    }
+                    .buttonStyle(.borderless)
                 }
-                .buttonStyle(.borderless)
-            }
 
-            Spacer()
-
-            if !icon.isEmpty {
-                Button("Remove Icon") {
-                    icon = ""
+                if UIImagePickerController.isSourceTypeAvailable(.camera) {
+                    Button(action: onCameraTap) {
+                        Label(L10n.string("Camera", language: language), systemImage: "camera")
+                    }
+                    .buttonStyle(.borderless)
                 }
-                .foregroundColor(.secondary)
-                .buttonStyle(.borderless)
+            } else {
+                if UIImagePickerController.isSourceTypeAvailable(.camera) {
+                    Button(action: onCameraTap) {
+                        Label(L10n.string("Camera", language: language), systemImage: "camera")
+                    }
+                    .buttonStyle(.borderless)
+                }
+
+                if UIImagePickerController.isSourceTypeAvailable(.photoLibrary) {
+                    Button(action: onLibraryTap) {
+                        Label(L10n.string("Library", language: language), systemImage: "photo")
+                    }
+                    .buttonStyle(.borderless)
+                }
+
+                Spacer()
+
+                if !icon.isEmpty {
+                    Button(L10n.string("Remove Icon", language: language)) {
+                        icon = ""
+                    }
+                    .foregroundColor(.secondary)
+                    .buttonStyle(.borderless)
+                }
             }
         }
     }

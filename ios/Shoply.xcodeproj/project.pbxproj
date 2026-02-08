@@ -12,6 +12,7 @@
 		0F1E2D3C4B5A69788796A5B4 /* AdjustQuantityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F708192A3B4C5 /* AdjustQuantityView.swift */; };
 		A7B8C9D0E1F2A3B4C5D6E7F8 /* ItemDetailsForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D2E3F4A5B6C7D8E9F0A1B2 /* ItemDetailsForm.swift */; };
 		B8C9D0E1F2A3B4C5D6E7F8A9 /* AddItemDetailsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E3F4A5B6C7D8E9F0A1B2C3 /* AddItemDetailsView.swift */; };
+		DEADBEEF1234567890ABCDEF /* L10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0FFEE001234567890ABCDEF /* L10n.swift */; };
 		E5F4A6B7C8D9E0F1A2B3C4D5 /* CatalogItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1C0F1A0B1C2D3E4F5A6B7C8 /* CatalogItem.swift */; };
 		F6A5B7C8D9E0F1A2B3C4D5E6 /* ItemDetailsDraft.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2D1E2F3A4B5C6D7E8F9A0B1 /* ItemDetailsDraft.swift */; };
 		16CF7383E7DF51F2B1290294 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 1F6F4F172CD4078B988FBE9B /* FirebaseMessaging */; };
@@ -61,6 +62,7 @@
 		1A2B3C4D5E6F708192A3B4C5 /* AdjustQuantityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdjustQuantityView.swift; sourceTree = "<group>"; };
 		A1C0F1A0B1C2D3E4F5A6B7C8 /* CatalogItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogItem.swift; sourceTree = "<group>"; };
 		B2D1E2F3A4B5C6D7E8F9A0B1 /* ItemDetailsDraft.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemDetailsDraft.swift; sourceTree = "<group>"; };
+		C0FFEE001234567890ABCDEF /* L10n.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L10n.swift; sourceTree = "<group>"; };
 		C3D2E3F4A5B6C7D8E9F0A1B2 /* ItemDetailsForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemDetailsForm.swift; sourceTree = "<group>"; };
 		D4E3F4A5B6C7D8E9F0A1B2C3 /* AddItemDetailsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddItemDetailsView.swift; sourceTree = "<group>"; };
 		0E062A0378834EBD92C6D380 /* ShareSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareSheet.swift; sourceTree = "<group>"; };
@@ -151,6 +153,7 @@
 			isa = PBXGroup;
 			children = (
 				058C21FA518A4D96993AA66F /* AuthService.swift */,
+				C0FFEE001234567890ABCDEF /* L10n.swift */,
 				2598D97DD32B2EAE15DEF24E /* InviteService.swift */,
 				00168C4A3F3918E76D5C4BD9 /* ListRepository.swift */,
 				7341C8CAC1D2F5C77587018C /* PushTokenStore.swift */,
@@ -343,6 +346,7 @@
 				7C0DC3B394B0683646681BCF /* AddScannedItemView.swift in Sources */,
 				9FB4330A991A459036666EAA /* AppDelegate.swift in Sources */,
 				6316092DC306EC328E8E7A9A /* AuthService.swift in Sources */,
+				DEADBEEF1234567890ABCDEF /* L10n.swift in Sources */,
 				E5F4A6B7C8D9E0F1A2B3C4D5 /* CatalogItem.swift in Sources */,
 				3A9BCA0B348B700D31D55B71 /* CreateListView.swift in Sources */,
 				C01C5328B42691319A4809B8 /* InviteService.swift in Sources */,

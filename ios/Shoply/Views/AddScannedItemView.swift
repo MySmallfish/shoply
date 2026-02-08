@@ -5,8 +5,8 @@ struct AddScannedItemView: View {
     @Binding var draft: ItemDetailsDraft
     let onAdd: (ItemDetailsDraft) -> Void
 
+    @AppStorage("appLanguage") private var appLanguage = "he"
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.layoutDirection) private var layoutDirection
     @State private var showBarcodeScanner = false
 
     init(barcode: String, draft: Binding<ItemDetailsDraft>, onAdd: @escaping (ItemDetailsDraft) -> Void) {
@@ -16,6 +16,10 @@ struct AddScannedItemView: View {
     }
 
     var body: some View {
+        let isRTL = appLanguage.hasPrefix("he") || appLanguage.hasPrefix("ar")
+        let title = L10n.string("Add Item", language: appLanguage)
+        let addTitle = L10n.string("Add", language: appLanguage)
+        let cancelTitle = L10n.string("Cancel", language: appLanguage)
         NavigationStack {
             Form {
                 ItemDetailsForm(
@@ -28,20 +32,15 @@ struct AddScannedItemView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .principal) {
-                    let title = NSLocalizedString("Add Item", comment: "")
                     HStack {
-                        if layoutDirection == .rightToLeft {
-                            Spacer()
-                        }
+                        if isRTL { Spacer() }
                         Text(title)
                             .font(.headline)
-                        if layoutDirection == .leftToRight {
-                            Spacer()
-                        }
+                        if !isRTL { Spacer() }
                     }
                 }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button(NSLocalizedString("Add", comment: "")) {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(addTitle) {
                         onAdd(draft)
                         dismiss()
                     }
@@ -49,13 +48,14 @@ struct AddScannedItemView: View {
                     .buttonStyle(.borderedProminent)
                     .tint(.primary)
                 }
-                ToolbarItem(placement: .topBarLeading) {
-                    Button(NSLocalizedString("Cancel", comment: "")) {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(cancelTitle) {
                         dismiss()
                     }
                 }
             }
         }
+        .environment(\.layoutDirection, isRTL ? .rightToLeft : .leftToRight)
         .sheet(isPresented: $showBarcodeScanner) {
             ScannerView { code in
                 draft.barcode = code

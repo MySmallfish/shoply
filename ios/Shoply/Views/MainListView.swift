@@ -22,6 +22,7 @@ struct MainListView: View {
     @State private var undoTask: Task<Void, Never>?
     @State private var previewIcon: PreviewIcon?
     @StateObject private var shakeDetector = ShakeDetector()
+    @State private var didOpenDebugAdjustSheet = false
 
     var body: some View {
         NavigationStack {
@@ -80,6 +81,17 @@ struct MainListView: View {
                 }
             }
         }
+#if DEBUG
+        .onChange(of: listViewModel.items.count) { _ in
+            guard !didOpenDebugAdjustSheet else { return }
+            guard ProcessInfo.processInfo.arguments.contains("DEBUG_OPEN_ADJUST") else { return }
+            guard adjustItem == nil else { return }
+            guard !listViewModel.items.isEmpty else { return }
+
+            didOpenDebugAdjustSheet = true
+            adjustItem = listViewModel.items.first(where: { ($0.icon ?? "").isEmpty == false }) ?? listViewModel.items.first
+        }
+#endif
         .sheet(isPresented: $showScanner) {
             ScannerView { code in
                 listViewModel.handleScan(barcode: code)
@@ -120,12 +132,8 @@ struct MainListView: View {
             AddItemDetailsView(
                 draft: $detailsDraft,
                 allowBarcodeEdit: detailsDraft.barcode.isEmpty,
-                title: detailsItemId == nil
-                    ? NSLocalizedString("Add Item", comment: "")
-                    : NSLocalizedString("Edit Item", comment: ""),
-                primaryTitle: detailsItemId == nil
-                    ? NSLocalizedString("Add", comment: "")
-                    : NSLocalizedString("Save", comment: "")
+                titleKey: detailsItemId == nil ? "Add Item" : "Edit Item",
+                primaryTitleKey: detailsItemId == nil ? "Add" : "Save"
             ) { draft in
                 if let itemId = detailsItemId {
                     listViewModel.updateItemDetails(itemId: itemId, draft: draft)

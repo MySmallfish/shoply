@@ -12,11 +12,24 @@ struct CreateListView: View {
             Form {
                 Section("List name") {
                     TextField("e.g. Grocery", text: $title)
-                        .multilineTextAlignment(layoutDirection == .rightToLeft ? .trailing : .leading)
+                        .multilineTextAlignment(.leading)
                 }
             }
-            .navigationTitle("New List")
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .principal) {
+                    HStack {
+                        if layoutDirection == .rightToLeft {
+                            Spacer()
+                        }
+                        Text("New List")
+                            .font(.headline)
+                        if layoutDirection == .leftToRight {
+                            Spacer()
+                        }
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Create") {
                         session.createList(title: title)

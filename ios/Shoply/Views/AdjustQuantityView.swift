@@ -9,8 +9,10 @@ struct AdjustQuantityView: View {
     @State private var amount: Int
     @State private var mode: QuantityMode
 
+    @AppStorage("appLanguage") private var appLanguage = "he"
+
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.layoutDirection) private var layoutDirection
+    @Environment(\.locale) private var locale
 
     init(
         item: ShoppingItem,
@@ -29,78 +31,36 @@ struct AdjustQuantityView: View {
     }
 
     var body: some View {
-        let alignment: HorizontalAlignment = layoutDirection == .rightToLeft ? .trailing : .leading
-        let title = NSLocalizedString("Update Item", comment: "")
+        let isRTL = appLanguage.hasPrefix("he")
+            || appLanguage.hasPrefix("ar")
         NavigationStack {
             VStack(spacing: 20) {
                 HStack(alignment: .center, spacing: 12) {
-                    if let icon = item.icon, !icon.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                        if let onIconTap {
-                            Button {
-                                onIconTap(icon)
-                            } label: {
-                                ItemIconView(icon: icon, size: 28)
-                            }
-                            .buttonStyle(.plain)
-                        } else {
-                            ItemIconView(icon: icon, size: 28)
-                        }
-                    }
-
-                    VStack(alignment: alignment, spacing: 6) {
-                        Text(item.name)
-                            .font(.system(size: 18, weight: .semibold))
-                        Text(String(format: NSLocalizedString("left_to_buy_format", comment: ""), item.quantity))
-                            .font(.system(size: 14))
-                            .foregroundColor(.secondary)
-                    }
-                    .frame(maxWidth: .infinity, alignment: layoutDirection == .rightToLeft ? .trailing : .leading)
+                    headerIcon
+                    headerText
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .frame(maxWidth: .infinity, alignment: layoutDirection == .rightToLeft ? .trailing : .leading)
+                .frame(maxWidth: .infinity)
 
-                Picker(NSLocalizedString("Mode", comment: ""), selection: $mode) {
+                Picker("Mode", selection: $mode) {
                     ForEach(QuantityMode.allCases) { selection in
-                        Text(selection.title).tag(selection)
+                        Text(selection.titleKey).tag(selection)
                     }
                 }
                 .pickerStyle(.segmented)
 
-                Button(NSLocalizedString("Edit Item", comment: "")) {
-                    onEditDetails()
-                }
-                .buttonStyle(.bordered)
-                .frame(maxWidth: .infinity, alignment: layoutDirection == .rightToLeft ? .trailing : .leading)
+                Button("Edit Item") { onEditDetails() }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .buttonStyle(.bordered)
 
-                Text(NSLocalizedString("How much?", comment: ""))
+                Text("How much?")
                     .font(.system(size: 14, weight: .semibold))
-                    .frame(maxWidth: .infinity, alignment: layoutDirection == .rightToLeft ? .trailing : .leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
                 HStack(spacing: 24) {
-                    Button {
-                        if amount > 1 {
-                            amount -= 1
-                        }
-                    } label: {
-                        Image(systemName: "minus")
-                            .font(.system(size: 20, weight: .bold))
-                            .frame(width: 56, height: 56)
-                            .background(Color(.secondarySystemBackground))
-                            .clipShape(Circle())
-                    }
-
-                    Text("\(max(1, amount))")
-                        .font(.system(size: 44, weight: .bold, design: .rounded))
-                        .frame(minWidth: 80)
-
-                    Button {
-                        amount += 1
-                    } label: {
-                        Image(systemName: "plus")
-                            .font(.system(size: 20, weight: .bold))
-                            .frame(width: 56, height: 56)
-                            .background(Color(.secondarySystemBackground))
-                            .clipShape(Circle())
-                    }
+                    decrementButton
+                    amountText
+                    incrementButton
                 }
                 .frame(maxWidth: .infinity)
 
@@ -111,19 +71,11 @@ struct AdjustQuantityView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .principal) {
-                    HStack {
-                        if layoutDirection == .rightToLeft {
-                            Spacer()
-                        }
-                        Text(title)
-                            .font(.headline)
-                        if layoutDirection == .leftToRight {
-                            Spacer()
-                        }
-                    }
+                    Text("Update Item")
+                        .font(.headline)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button(NSLocalizedString("Apply", comment: "")) {
+                    Button("Apply") {
                         let resolved = max(1, amount)
                         let delta = mode == .bought ? -resolved : resolved
                         onApply(delta)
@@ -133,11 +85,91 @@ struct AdjustQuantityView: View {
                     .tint(.primary)
                 }
                 ToolbarItem(placement: .topBarLeading) {
-                    Button(NSLocalizedString("Cancel", comment: "")) {
+                    Button("Cancel") {
                         dismiss()
                     }
                 }
             }
+        }
+        // SwiftUI RTL propagation into a sheet + NavigationStack has been flaky on iOS 26.x,
+        // so we force it based on the app-selected locale.
+        .environment(\.layoutDirection, isRTL ? .rightToLeft : .leftToRight)
+    }
+
+    @ViewBuilder
+    private var headerIcon: some View {
+        if let icon = item.icon, !icon.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            if let onIconTap {
+                Button {
+                    onIconTap(icon)
+                } label: {
+                    ItemIconView(icon: icon, size: 28)
+                }
+                .buttonStyle(.plain)
+            } else {
+                ItemIconView(icon: icon, size: 28)
+            }
+        }
+    }
+
+    private var headerText: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(item.name)
+                .font(.system(size: 18, weight: .semibold))
+                .multilineTextAlignment(.leading)
+            Text(leftToBuyText)
+                .font(.system(size: 14))
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.leading)
+        }
+    }
+
+    private var leftToBuyText: String {
+        let template = localized("left_to_buy_format")
+        let formattingLocale = Locale(identifier: appLanguage)
+        return String(format: template, locale: formattingLocale, item.quantity)
+    }
+
+    private func localized(_ key: String) -> String {
+        // Use the app-selected language, not the Simulator's language order.
+        // (The Simulator is currently `en-IL, he-IL`, which breaks Foundation localization APIs.)
+        let languageCode = appLanguage.split(separator: "-").first.map(String.init) ?? appLanguage
+        if let path = Bundle.main.path(forResource: languageCode, ofType: "lproj"),
+           let bundle = Bundle(path: path) {
+            return bundle.localizedString(forKey: key, value: nil, table: nil)
+        }
+        return Bundle.main.localizedString(forKey: key, value: nil, table: nil)
+    }
+
+    private var amountText: some View {
+        Text("\(max(1, amount))")
+            .font(.system(size: 44, weight: .bold, design: .rounded))
+            .frame(minWidth: 80)
+    }
+
+    private var decrementButton: some View {
+        Button {
+            if amount > 1 {
+                amount -= 1
+            }
+        } label: {
+            Image(systemName: "minus")
+                .font(.system(size: 20, weight: .bold))
+                .frame(width: 56, height: 56)
+                .background(Color(.secondarySystemBackground))
+                .clipShape(Circle())
+        }
+    }
+
+    private var incrementButton: some View {
+        Button {
+            amount += 1
+        } label: {
+            Image(systemName: "plus")
+                .font(.system(size: 20, weight: .bold))
+                .frame(width: 56, height: 56)
+                .background(Color(.secondarySystemBackground))
+                .clipShape(Circle())
         }
     }
 }
@@ -148,12 +180,10 @@ private enum QuantityMode: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
-    var title: String {
+    var titleKey: LocalizedStringKey {
         switch self {
-        case .bought:
-            return NSLocalizedString("Bought", comment: "")
-        case .need:
-            return NSLocalizedString("Need", comment: "")
+        case .bought: "Bought"
+        case .need: "Need"
         }
     }
 }

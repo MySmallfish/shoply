@@ -27,11 +27,10 @@ struct AddItemBar: View {
     }
 
     private var inputField: some View {
-        let alignment: TextAlignment = layoutDirection == .rightToLeft ? .trailing : .leading
         return TextField("Add item", text: $text)
             .textFieldStyle(.plain)
             .submitLabel(.done)
-            .multilineTextAlignment(alignment)
+            .multilineTextAlignment(.leading)
             .onSubmit {
                 if text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return }
                 onAdd()

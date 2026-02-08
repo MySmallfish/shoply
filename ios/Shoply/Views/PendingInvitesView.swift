@@ -3,6 +3,7 @@ import SwiftUI
 struct PendingInvitesView: View {
     @EnvironmentObject private var session: SessionViewModel
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.layoutDirection) private var layoutDirection
 
     var body: some View {
         NavigationStack {
@@ -18,7 +19,8 @@ struct PendingInvitesView: View {
                     }
                 }
             }
-            .navigationTitle("Pending Invitations")
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
             .alert(
                 "Invitation",
                 isPresented: Binding(
@@ -31,6 +33,18 @@ struct PendingInvitesView: View {
                 Text(session.inviteActionError ?? "")
             }
             .toolbar {
+                ToolbarItem(placement: .principal) {
+                    HStack {
+                        if layoutDirection == .rightToLeft {
+                            Spacer()
+                        }
+                        Text("Pending Invitations")
+                            .font(.headline)
+                        if layoutDirection == .leftToRight {
+                            Spacer()
+                        }
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Done") { dismiss() }
                 }
@@ -42,25 +56,38 @@ struct PendingInvitesView: View {
 private struct PendingInviteRow: View {
     let invite: PendingInvite
     let onAccept: () -> Void
+    @Environment(\.layoutDirection) private var layoutDirection
 
     var body: some View {
+        let isRTL = layoutDirection == .rightToLeft
         HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(invite.listTitle.isEmpty ? invite.listId : invite.listTitle)
-                    .fontWeight(.semibold)
-                Text(roleLabel(invite.role))
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+            if isRTL {
+                Button("Accept") {
+                    onAccept()
+                }
+                .buttonStyle(.borderedProminent)
+                Spacer()
+                inviteInfo
+            } else {
+                inviteInfo
+                Spacer()
+                Button("Accept") {
+                    onAccept()
+                }
+                .buttonStyle(.borderedProminent)
             }
-
-            Spacer()
-
-            Button("Accept") {
-                onAccept()
-            }
-            .buttonStyle(.borderedProminent)
         }
         .padding(.vertical, 4)
+    }
+
+    private var inviteInfo: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(invite.listTitle.isEmpty ? invite.listId : invite.listTitle)
+                .fontWeight(.semibold)
+            Text(roleLabel(invite.role))
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
     }
 
     private func roleLabel(_ role: String) -> String {

@@ -35,7 +35,6 @@ struct ListSwitcherView: View {
     }
 
     private var currentTitle: String {
-        lists.first(where: { $0.id == selectedListId })?.title
-            ?? NSLocalizedString("Lists", comment: "")
+        lists.first(where: { $0.id == selectedListId })?.title ?? "Lists"
     }
 }

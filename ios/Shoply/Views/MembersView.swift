@@ -3,6 +3,7 @@ import SwiftUI
 struct MembersView: View {
     @EnvironmentObject private var session: SessionViewModel
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.layoutDirection) private var layoutDirection
     @StateObject private var viewModel = MembersViewModel()
 
     var body: some View {
@@ -48,8 +49,21 @@ struct MembersView: View {
                     }
                 }
             }
-            .navigationTitle("Members")
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .principal) {
+                    HStack {
+                        if layoutDirection == .rightToLeft {
+                            Spacer()
+                        }
+                        Text("Members")
+                            .font(.headline)
+                        if layoutDirection == .leftToRight {
+                            Spacer()
+                        }
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Done") { dismiss() }
                 }
@@ -72,50 +86,83 @@ private struct MemberRowView: View {
     let isOwner: Bool
     let onRoleChange: (String) -> Void
     let onRemove: () -> Void
+    @Environment(\.layoutDirection) private var layoutDirection
+
+    private var isRTL: Bool { layoutDirection == .rightToLeft }
 
     var body: some View {
         HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 6) {
-                    Text(member.name)
-                        .fontWeight(.semibold)
-                    if member.isCurrentUser {
-                        Text("You")
-                            .font(.caption)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Color.black.opacity(0.08))
-                            .cornerRadius(6)
-                    }
+            if isRTL {
+                if isOwner && !member.isCurrentUser {
+                    memberMenu
                 }
-                if !member.email.isEmpty {
-                    Text(member.email)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-            }
-
-            Spacer()
-
-                Text(roleLabel(member.role))
-                    .font(.caption)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color.black.opacity(0.08))
-                    .cornerRadius(8)
-
-            if isOwner && !member.isCurrentUser {
-                Menu {
-                    Button("Make Editor") { onRoleChange("editor") }
-                    Button("Make Viewer") { onRoleChange("viewer") }
-                    Divider()
-                    Button("Remove", role: .destructive) { onRemove() }
-                } label: {
-                    Image(systemName: "ellipsis.circle")
+                roleBadge
+                Spacer()
+                memberInfo
+            } else {
+                memberInfo
+                Spacer()
+                roleBadge
+                if isOwner && !member.isCurrentUser {
+                    memberMenu
                 }
             }
         }
         .padding(.vertical, 4)
+    }
+
+    private var memberInfo: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 6) {
+                if isRTL {
+                    if member.isCurrentUser {
+                        youBadge
+                    }
+                    Text(member.name)
+                        .fontWeight(.semibold)
+                } else {
+                    Text(member.name)
+                        .fontWeight(.semibold)
+                    if member.isCurrentUser {
+                        youBadge
+                    }
+                }
+            }
+            if !member.email.isEmpty {
+                Text(member.email)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+        }
+    }
+
+    private var youBadge: some View {
+        Text("You")
+            .font(.caption)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(Color.black.opacity(0.08))
+            .cornerRadius(6)
+    }
+
+    private var roleBadge: some View {
+        Text(roleLabel(member.role))
+            .font(.caption)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(Color.black.opacity(0.08))
+            .cornerRadius(8)
+    }
+
+    private var memberMenu: some View {
+        Menu {
+            Button("Make Editor") { onRoleChange("editor") }
+            Button("Make Viewer") { onRoleChange("viewer") }
+            Divider()
+            Button("Remove", role: .destructive) { onRemove() }
+        } label: {
+            Image(systemName: "ellipsis.circle")
+        }
     }
 
     private func roleLabel(_ role: String) -> String {
@@ -130,26 +177,40 @@ private struct MemberRowView: View {
 private struct InviteRowView: View {
     let invite: InviteRow
     let onRevoke: () -> Void
+    @Environment(\.layoutDirection) private var layoutDirection
 
     var body: some View {
+        let isRTL = layoutDirection == .rightToLeft
         HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(invite.email)
-                    .fontWeight(.semibold)
-                Text("\(roleLabel(invite.role)) • \(statusLabel(invite.status))")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-
-            Spacer()
-
-            if invite.status == "pending" {
-                Button("Revoke", role: .destructive) {
-                    onRevoke()
+            if isRTL {
+                if invite.status == "pending" {
+                    Button("Revoke", role: .destructive) {
+                        onRevoke()
+                    }
+                }
+                Spacer()
+                inviteInfo
+            } else {
+                inviteInfo
+                Spacer()
+                if invite.status == "pending" {
+                    Button("Revoke", role: .destructive) {
+                        onRevoke()
+                    }
                 }
             }
         }
         .padding(.vertical, 4)
+    }
+
+    private var inviteInfo: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(invite.email)
+                .fontWeight(.semibold)
+            Text("\(roleLabel(invite.role)) • \(statusLabel(invite.status))")
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
     }
 
     private func roleLabel(_ role: String) -> String {
