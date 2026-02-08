@@ -36,11 +36,19 @@ struct AdjustQuantityView: View {
         NavigationStack {
             VStack(spacing: 20) {
                 HStack(alignment: .center, spacing: 12) {
-                    headerIcon
-                    headerText
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    // Don't rely on automatic mirroring for RTL: it has been inconsistent inside sheets.
+                    if isRTL {
+                        headerText(isRTL: true)
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                        headerIcon
+                    } else {
+                        headerIcon
+                        headerText(isRTL: false)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
                 }
                 .frame(maxWidth: .infinity)
+                .environment(\.layoutDirection, .leftToRight)
 
                 Picker("Mode", selection: $mode) {
                     ForEach(QuantityMode.allCases) { selection in
@@ -49,20 +57,33 @@ struct AdjustQuantityView: View {
                 }
                 .pickerStyle(.segmented)
 
-                Button("Edit Item") { onEditDetails() }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .buttonStyle(.bordered)
+                HStack {
+                    if isRTL { Spacer(minLength: 0) }
+                    Button("Edit Item") { onEditDetails() }
+                        .buttonStyle(.bordered)
+                    if !isRTL { Spacer(minLength: 0) }
+                }
+                .frame(maxWidth: .infinity)
+                .environment(\.layoutDirection, .leftToRight)
 
                 Text("How much?")
                     .font(.system(size: 14, weight: .semibold))
+                    // "Leading" is the start edge: left in LTR, right in RTL.
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                 HStack(spacing: 24) {
-                    decrementButton
-                    amountText
-                    incrementButton
+                    if isRTL {
+                        incrementButton
+                        amountText
+                        decrementButton
+                    } else {
+                        decrementButton
+                        amountText
+                        incrementButton
+                    }
                 }
                 .frame(maxWidth: .infinity)
+                .environment(\.layoutDirection, .leftToRight)
 
                 Spacer()
             }
@@ -112,15 +133,15 @@ struct AdjustQuantityView: View {
         }
     }
 
-    private var headerText: some View {
-        VStack(alignment: .leading, spacing: 6) {
+    private func headerText(isRTL: Bool) -> some View {
+        VStack(alignment: isRTL ? .trailing : .leading, spacing: 6) {
             Text(item.name)
                 .font(.system(size: 18, weight: .semibold))
-                .multilineTextAlignment(.leading)
+                .multilineTextAlignment(isRTL ? .trailing : .leading)
             Text(leftToBuyText)
                 .font(.system(size: 14))
                 .foregroundColor(.secondary)
-                .multilineTextAlignment(.leading)
+                .multilineTextAlignment(isRTL ? .trailing : .leading)
         }
     }
 
