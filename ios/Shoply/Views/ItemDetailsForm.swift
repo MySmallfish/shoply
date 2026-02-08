@@ -13,8 +13,7 @@ struct ItemDetailsForm: View {
 
     var body: some View {
         let isRTL = appLanguage.hasPrefix("he") || appLanguage.hasPrefix("ar") || layoutDirection == .rightToLeft
-        // Use semantic "leading" everywhere and rely on layoutDirection to map it to the correct edge.
-        // (In RTL, leading == right; trailing == left.)
+        // In RTL, "leading" is the physical right edge; use semantic alignment so it works in both directions.
         let alignment: TextAlignment = .leading
         let canEditBarcode = allowBarcodeEdit || isEditingBarcode
 
@@ -29,16 +28,11 @@ struct ItemDetailsForm: View {
             TextField(L10n.string("Name", language: appLanguage), text: $draft.name)
                 .multilineTextAlignment(alignment)
             HStack(spacing: 8) {
-                if isRTL {
-                    barcodeButtons
-                    barcodeField(alignment: alignment, canEditBarcode: canEditBarcode)
-                } else {
-                    barcodeField(alignment: alignment, canEditBarcode: canEditBarcode)
-                    barcodeButtons
-                }
+                barcodeField(alignment: alignment, canEditBarcode: canEditBarcode)
+                barcodeButtons
             }
         } header: {
-            sectionHeader("Item", isRTL: isRTL)
+            sectionHeader("Item")
         }
     }
 
@@ -52,35 +46,7 @@ struct ItemDetailsForm: View {
 
     @ViewBuilder
     private var barcodeButtons: some View {
-        let isRTL = appLanguage.hasPrefix("he") || appLanguage.hasPrefix("ar") || layoutDirection == .rightToLeft
-        if isRTL {
-            if !allowBarcodeEdit && !isEditingBarcode {
-                Button {
-                    isEditingBarcode = true
-                } label: {
-                    Image(systemName: "pencil")
-                }
-                .accessibilityLabel(L10n.string("Edit", language: appLanguage))
-            }
-
-            if !draft.barcode.isEmpty {
-                Button {
-                    UIPasteboard.general.string = draft.barcode
-                } label: {
-                    Image(systemName: "doc.on.doc")
-                }
-                .accessibilityLabel(L10n.string("Copy", language: appLanguage))
-            }
-
-            if let onScanBarcode {
-                Button {
-                    onScanBarcode()
-                } label: {
-                    Image(systemName: "barcode.viewfinder")
-                }
-                .accessibilityLabel(L10n.string("Scan Barcode", language: appLanguage))
-            }
-        } else {
+        HStack(spacing: 10) {
             if let onScanBarcode {
                 Button {
                     onScanBarcode()
@@ -119,11 +85,11 @@ struct ItemDetailsForm: View {
             TextField(L10n.string("Description", language: appLanguage), text: $draft.descriptionText, axis: .vertical)
                 .multilineTextAlignment(alignment)
         } header: {
-            sectionHeader("Details", isRTL: isRTL)
+            sectionHeader("Details")
         }
     }
 
-    private func sectionHeader(_ key: String, isRTL: Bool) -> some View {
+    private func sectionHeader(_ key: String) -> some View {
         Text(L10n.string(key, language: appLanguage))
             .frame(maxWidth: .infinity, alignment: .leading)
             .textCase(nil)
@@ -153,13 +119,11 @@ private struct IconPickerSection: View {
 
     @ViewBuilder
     private var iconContent: some View {
-        let isRTL = language.hasPrefix("he") || language.hasPrefix("ar")
         Section {
             StockIconsRow(stockIcons: stockIcons, icon: $icon)
             IconActionRow(
                 icon: $icon,
                 language: language,
-                isRTL: isRTL,
                 onCameraTap: handleCameraTap,
                 onLibraryTap: handleLibraryTap
             )
@@ -380,7 +344,6 @@ private struct StockIconsRow: View {
 private struct IconActionRow: View {
     @Binding var icon: String
     let language: String
-    let isRTL: Bool
     let onCameraTap: () -> Void
     let onLibraryTap: () -> Void
 
@@ -400,6 +363,7 @@ private struct IconActionRow: View {
                     Button(action: onCameraTap) {
                         Label(L10n.string("Camera", language: language), systemImage: "camera")
                             .frame(maxWidth: .infinity)
+                            .foregroundColor(.accentColor)
                     }
                     .buttonStyle(.plain)
                 }
@@ -408,6 +372,7 @@ private struct IconActionRow: View {
                     Button(action: onLibraryTap) {
                         Label(L10n.string("Library", language: language), systemImage: "photo")
                             .frame(maxWidth: .infinity)
+                            .foregroundColor(.accentColor)
                     }
                     .buttonStyle(.plain)
                 }
