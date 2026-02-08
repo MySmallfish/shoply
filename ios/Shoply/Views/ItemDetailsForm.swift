@@ -13,7 +13,9 @@ struct ItemDetailsForm: View {
 
     var body: some View {
         let isRTL = appLanguage.hasPrefix("he") || appLanguage.hasPrefix("ar") || layoutDirection == .rightToLeft
-        let alignment: TextAlignment = isRTL ? .trailing : .leading
+        // Use semantic "leading" everywhere and rely on layoutDirection to map it to the correct edge.
+        // (In RTL, leading == right; trailing == left.)
+        let alignment: TextAlignment = .leading
         let canEditBarcode = allowBarcodeEdit || isEditingBarcode
 
         itemSection(isRTL: isRTL, alignment: alignment, canEditBarcode: canEditBarcode)
@@ -27,13 +29,8 @@ struct ItemDetailsForm: View {
             TextField(L10n.string("Name", language: appLanguage), text: $draft.name)
                 .multilineTextAlignment(alignment)
             HStack(spacing: 8) {
-                if isRTL {
-                    barcodeButtons
-                    barcodeField(alignment: alignment, canEditBarcode: canEditBarcode)
-                } else {
-                    barcodeField(alignment: alignment, canEditBarcode: canEditBarcode)
-                    barcodeButtons
-                }
+                barcodeField(alignment: alignment, canEditBarcode: canEditBarcode)
+                barcodeButtons
             }
         } header: {
             sectionHeader("Item", isRTL: isRTL)
@@ -123,7 +120,7 @@ struct ItemDetailsForm: View {
 
     private func sectionHeader(_ key: String, isRTL: Bool) -> some View {
         Text(L10n.string(key, language: appLanguage))
-            .frame(maxWidth: .infinity, alignment: isRTL ? .trailing : .leading)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .textCase(nil)
     }
 }
@@ -165,11 +162,11 @@ private struct IconPickerSection: View {
             if !icon.isEmpty {
                 ItemIconView(icon: icon, size: 48)
                     .padding(.top, 4)
-                    .frame(maxWidth: .infinity, alignment: isRTL ? .trailing : .leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
         } header: {
             Text(L10n.string("Icon", language: language))
-                .frame(maxWidth: .infinity, alignment: isRTL ? .trailing : .leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .textCase(nil)
         }
     }
@@ -383,56 +380,34 @@ private struct IconActionRow: View {
     let onLibraryTap: () -> Void
 
     var body: some View {
-        HStack(spacing: 12) {
-            if isRTL {
-                if !icon.isEmpty {
-                    Button(L10n.string("Remove Icon", language: language)) {
-                        icon = ""
-                    }
-                    .foregroundColor(.secondary)
-                    .buttonStyle(.borderless)
+        VStack(alignment: .leading, spacing: 10) {
+            if !icon.isEmpty {
+                Button(L10n.string("Remove Icon", language: language)) {
+                    icon = ""
                 }
+                .foregroundColor(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .buttonStyle(.borderless)
+            }
 
-                Spacer()
-
-                if UIImagePickerController.isSourceTypeAvailable(.photoLibrary) {
-                    Button(action: onLibraryTap) {
-                        Label(L10n.string("Library", language: language), systemImage: "photo")
-                    }
-                    .buttonStyle(.borderless)
-                }
-
+            HStack(spacing: 12) {
                 if UIImagePickerController.isSourceTypeAvailable(.camera) {
                     Button(action: onCameraTap) {
                         Label(L10n.string("Camera", language: language), systemImage: "camera")
+                            .frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(.borderless)
-                }
-            } else {
-                if UIImagePickerController.isSourceTypeAvailable(.camera) {
-                    Button(action: onCameraTap) {
-                        Label(L10n.string("Camera", language: language), systemImage: "camera")
-                    }
-                    .buttonStyle(.borderless)
+                    .buttonStyle(.bordered)
                 }
 
                 if UIImagePickerController.isSourceTypeAvailable(.photoLibrary) {
                     Button(action: onLibraryTap) {
                         Label(L10n.string("Library", language: language), systemImage: "photo")
+                            .frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(.borderless)
-                }
-
-                Spacer()
-
-                if !icon.isEmpty {
-                    Button(L10n.string("Remove Icon", language: language)) {
-                        icon = ""
-                    }
-                    .foregroundColor(.secondary)
-                    .buttonStyle(.borderless)
+                    .buttonStyle(.bordered)
                 }
             }
+            .frame(maxWidth: .infinity)
         }
     }
 }
