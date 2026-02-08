@@ -22,6 +22,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -68,6 +69,8 @@ import androidx.compose.material.swipeable
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
@@ -85,6 +88,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.Slider
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -125,6 +130,9 @@ import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
+import com.google.firebase.firestore.FieldValue
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import java.io.ByteArrayOutputStream
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -133,11 +141,31 @@ import kotlin.math.sqrt
 
 @Composable
 fun ShoplyApp(viewModel: MainViewModel) {
+    val context = LocalContext.current
+    val prefs = remember { context.getSharedPreferences("shoply", Context.MODE_PRIVATE) }
+    var fontScale by remember { mutableStateOf(prefs.getFloat("fontScale", 1.0f)) }
+    val baseDensity = LocalDensity.current
+    val density = remember(fontScale, baseDensity.density) {
+        androidx.compose.ui.unit.Density(baseDensity.density, fontScale = fontScale)
+    }
+
+    CompositionLocalProvider(
+        LocalLayoutDirection provides LayoutDirection.Rtl,
+        androidx.compose.ui.platform.LocalDensity provides density
+    ) {
     val user by viewModel.user.collectAsState(initial = null)
     if (user == null) {
         SignInScreen(viewModel)
     } else {
-        ListScreen(viewModel)
+        ListScreen(
+            viewModel = viewModel,
+            fontScale = fontScale,
+            onFontScaleChange = { scale ->
+                fontScale = scale
+                prefs.edit().putFloat("fontScale", scale).apply()
+            }
+        )
+    }
     }
 }
 
@@ -200,7 +228,11 @@ private fun handleGoogleSignIn(account: GoogleSignInAccount?, viewModel: MainVie
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 @Composable
-fun ListScreen(viewModel: MainViewModel) {
+fun ListScreen(
+    viewModel: MainViewModel,
+    fontScale: Float,
+    onFontScaleChange: (Float) -> Unit
+) {
     val lists by viewModel.lists.collectAsState(initial = emptyList())
     val items by viewModel.items.collectAsState(initial = emptyList())
     val catalogItems by viewModel.catalogItems.collectAsState(initial = emptyList())
@@ -212,6 +244,7 @@ fun ListScreen(viewModel: MainViewModel) {
     val currentRole by viewModel.currentRole.collectAsState(initial = null)
     val selectedListId by viewModel.selectedListId.collectAsState(initial = null)
     val undoAction by viewModel.undoAction.collectAsState(initial = null)
+    val user by viewModel.user.collectAsState(initial = null)
     val context = LocalContext.current
 
     ShakeDetector(onShake = { viewModel.undoLastDeletion() })
@@ -227,6 +260,8 @@ fun ListScreen(viewModel: MainViewModel) {
     var showDeleteListConfirm by remember { mutableStateOf(false) }
     var showMembers by remember { mutableStateOf(false) }
     var showPendingInvites by remember { mutableStateOf(false) }
+    var showSettings by remember { mutableStateOf(false) }
+    var showOverflowMenu by remember { mutableStateOf(false) }
     var showAddFromScan by remember { mutableStateOf(false) }
     var scanCode by remember { mutableStateOf<String?>(null) }
     var scannedDraft by remember { mutableStateOf(ItemDetailsDraft()) }
@@ -341,11 +376,42 @@ fun ListScreen(viewModel: MainViewModel) {
                     IconButton(onClick = { showInvite = true }) {
                         Icon(imageVector = Icons.Default.PersonAdd, contentDescription = stringResource(R.string.cd_invite))
                     }
-                    IconButton(onClick = { showPendingInvites = true }) {
-                        Icon(imageVector = Icons.Default.Email, contentDescription = stringResource(R.string.cd_pending_invitations))
-                    }
-                    IconButton(onClick = { viewModel.signOut() }) {
-                        Icon(imageVector = Icons.Default.PowerSettingsNew, contentDescription = stringResource(R.string.cd_sign_out))
+                    Box {
+                        IconButton(onClick = { showOverflowMenu = true }) {
+                            Icon(imageVector = Icons.Default.MoreVert, contentDescription = stringResource(R.string.cd_more))
+                        }
+                        DropdownMenu(
+                            expanded = showOverflowMenu,
+                            onDismissRequest = { showOverflowMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.pending_invitations_title)) },
+                                onClick = {
+                                    showOverflowMenu = false
+                                    showPendingInvites = true
+                                },
+                                leadingIcon = {
+                                    Icon(imageVector = Icons.Default.Email, contentDescription = null)
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.settings)) },
+                                onClick = {
+                                    showOverflowMenu = false
+                                    showSettings = true
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.sign_out)) },
+                                onClick = {
+                                    showOverflowMenu = false
+                                    viewModel.signOut()
+                                },
+                                leadingIcon = {
+                                    Icon(imageVector = Icons.Default.PowerSettingsNew, contentDescription = null)
+                                }
+                            )
+                        }
                     }
                 }
             )
@@ -572,6 +638,18 @@ fun ListScreen(viewModel: MainViewModel) {
             invites = pendingInvites,
             onDismiss = { showPendingInvites = false },
             onAccept = { token -> viewModel.handleInviteToken(token) }
+        )
+    }
+
+    if (showSettings) {
+        val uid = user?.uid.orEmpty()
+        SettingsDialog(
+            userId = uid,
+            authEmail = user?.email.orEmpty(),
+            authDisplayName = user?.displayName.orEmpty(),
+            currentFontScale = fontScale,
+            onFontScaleChange = onFontScaleChange,
+            onDismiss = { showSettings = false }
         )
     }
 
@@ -1548,20 +1626,29 @@ private fun AdjustQuantityDialog(
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
                 )
                 Spacer(modifier = Modifier.height(12.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    if (mode == QuantityMode.BOUGHT) {
-                        Button(onClick = { onModeChange(QuantityMode.BOUGHT) }) {
-                            Text(stringResource(R.string.bought))
+                // Keep stable positions: Need on the left, Bought on the right.
+                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        val needSelected = mode == QuantityMode.NEED
+                        if (needSelected) {
+                            Button(onClick = { onModeChange(QuantityMode.NEED) }) {
+                                Text(stringResource(R.string.need))
+                            }
+                        } else {
+                            OutlinedButton(onClick = { onModeChange(QuantityMode.NEED) }) {
+                                Text(stringResource(R.string.need))
+                            }
                         }
-                        OutlinedButton(onClick = { onModeChange(QuantityMode.NEED) }) {
-                            Text(stringResource(R.string.need))
-                        }
-                    } else {
-                        OutlinedButton(onClick = { onModeChange(QuantityMode.BOUGHT) }) {
-                            Text(stringResource(R.string.bought))
-                        }
-                        Button(onClick = { onModeChange(QuantityMode.NEED) }) {
-                            Text(stringResource(R.string.need))
+
+                        val boughtSelected = mode == QuantityMode.BOUGHT
+                        if (boughtSelected) {
+                            Button(onClick = { onModeChange(QuantityMode.BOUGHT) }) {
+                                Text(stringResource(R.string.bought))
+                            }
+                        } else {
+                            OutlinedButton(onClick = { onModeChange(QuantityMode.BOUGHT) }) {
+                                Text(stringResource(R.string.bought))
+                            }
                         }
                     }
                 }
@@ -1877,6 +1964,173 @@ private fun ItemIconView(
             Text(text = icon, fontSize = (size.value * 0.9f).sp)
         }
     }
+}
+
+@Composable
+private fun SettingsDialog(
+    userId: String,
+    authEmail: String,
+    authDisplayName: String,
+    currentFontScale: Float,
+    onFontScaleChange: (Float) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+    val db = remember { FirebaseFirestore.getInstance() }
+
+    val textAlign = inputTextAlign()
+    val textStyle = LocalTextStyle.current.copy(textAlign = textAlign)
+
+    var loaded by remember { mutableStateOf(false) }
+    var saving by remember { mutableStateOf(false) }
+
+    var fullName by remember { mutableStateOf(authDisplayName) }
+    var notificationEmail by remember { mutableStateOf(authEmail) }
+    var avatarIcon by remember { mutableStateOf("") }
+
+    // Keep local until Save is pressed.
+    var fontScaleDraft by remember { mutableStateOf(currentFontScale) }
+
+    LaunchedEffect(userId) {
+        if (userId.isBlank() || loaded) return@LaunchedEffect
+        db.collection("users").document(userId).get()
+            .addOnSuccessListener { doc ->
+                fullName = doc.getString("displayName")?.takeIf { it.isNotBlank() } ?: authDisplayName
+                notificationEmail = doc.getString("notificationEmail")?.takeIf { it.isNotBlank() }
+                    ?: doc.getString("email")?.takeIf { it.isNotBlank() }
+                    ?: authEmail
+                avatarIcon = doc.getString("avatarIcon").orEmpty()
+                loaded = true
+            }
+            .addOnFailureListener {
+                loaded = true
+            }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.settings)) },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+            ) {
+                Text(
+                    text = stringResource(R.string.profile),
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = textAlign
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                if (avatarIcon.isNotBlank()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        ItemIconView(icon = avatarIcon, size = 72.dp)
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+
+                TextField(
+                    value = fullName,
+                    onValueChange = { fullName = it },
+                    placeholder = { PlaceholderText(stringResource(R.string.full_name), textAlign) },
+                    textStyle = textStyle
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                TextField(
+                    value = notificationEmail,
+                    onValueChange = { notificationEmail = it },
+                    placeholder = { PlaceholderText(stringResource(R.string.notification_email), textAlign) },
+                    textStyle = textStyle,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
+                )
+
+                if (authEmail.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = stringResource(R.string.signed_in_as_format, authEmail),
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.65f),
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = textAlign
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+                IconPicker(
+                    icon = avatarIcon,
+                    onIconChange = { avatarIcon = it }
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+                Divider()
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = stringResource(R.string.font_size),
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = textAlign
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Slider(
+                    value = fontScaleDraft,
+                    onValueChange = { fontScaleDraft = it },
+                    valueRange = 0.85f..1.25f
+                )
+                Text(
+                    text = stringResource(R.string.font_size_preview),
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = textAlign
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (userId.isBlank()) {
+                        Toast.makeText(context, context.getString(R.string.sign_in_before_settings), Toast.LENGTH_LONG).show()
+                        return@Button
+                    }
+                    saving = true
+                    val updates = hashMapOf<String, Any>(
+                        "displayName" to fullName.trim(),
+                        "notificationEmail" to notificationEmail.trim(),
+                        "updatedAt" to FieldValue.serverTimestamp()
+                    )
+                    updates["avatarIcon"] = if (avatarIcon.isBlank()) FieldValue.delete() else avatarIcon
+                    db.collection("users").document(userId)
+                        .set(updates, SetOptions.merge())
+                        .addOnSuccessListener {
+                            onFontScaleChange(fontScaleDraft)
+                            saving = false
+                            onDismiss()
+                        }
+                        .addOnFailureListener { error ->
+                            saving = false
+                            Toast.makeText(
+                                context,
+                                error.localizedMessage ?: context.getString(R.string.save_failed),
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
+                },
+                enabled = !saving
+            ) {
+                Text(stringResource(R.string.save))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel))
+            }
+        }
+    )
 }
 
 @Composable

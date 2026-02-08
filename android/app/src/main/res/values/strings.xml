@@ -12,6 +12,7 @@
     <string name="cd_invite">הזמנה</string>
     <string name="cd_pending_invitations">הזמנות ממתינות</string>
     <string name="cd_sign_out">התנתקות</string>
+    <string name="cd_more">עוד</string>
     <string name="cd_scan">סריקה</string>
     <string name="cd_manage_member">ניהול חבר</string>
 
@@ -83,6 +84,16 @@
     <string name="remove_icon">הסר אייקון</string>
     <string name="description">תיאור</string>
     <string name="save">שמור</string>
+    <string name="settings">הגדרות</string>
+    <string name="sign_out">התנתק</string>
+    <string name="profile">פרופיל</string>
+    <string name="full_name">שם מלא</string>
+    <string name="notification_email">אימייל להתראות</string>
+    <string name="signed_in_as_format">מחובר כ: %1$s</string>
+    <string name="sign_in_before_settings">נא להתחבר כדי לשנות הגדרות.</string>
+    <string name="save_failed">השמירה נכשלה.</string>
+    <string name="font_size">גודל טקסט</string>
+    <string name="font_size_preview">תצוגה מקדימה</string>
 
     <string name="how_much_did_you_buy">כמה קנית?</string>
     <string name="left_to_buy_format">נשאר לקנייה: %1$d</string>

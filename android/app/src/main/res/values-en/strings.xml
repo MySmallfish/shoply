@@ -12,6 +12,7 @@
     <string name="cd_invite">Invite</string>
     <string name="cd_pending_invitations">Pending invitations</string>
     <string name="cd_sign_out">Sign out</string>
+    <string name="cd_more">More</string>
     <string name="cd_scan">Scan</string>
     <string name="cd_manage_member">Manage member</string>
 
@@ -83,6 +84,16 @@
     <string name="remove_icon">Remove Icon</string>
     <string name="description">Description</string>
     <string name="save">Save</string>
+    <string name="settings">Settings</string>
+    <string name="sign_out">Sign out</string>
+    <string name="profile">Profile</string>
+    <string name="full_name">Full name</string>
+    <string name="notification_email">Notification email</string>
+    <string name="signed_in_as_format">Signed in as: %1$s</string>
+    <string name="sign_in_before_settings">Please sign in to change settings.</string>
+    <string name="save_failed">Save failed.</string>
+    <string name="font_size">Font size</string>
+    <string name="font_size_preview">Preview</string>
 
     <string name="how_much_did_you_buy">How much did you buy?</string>
     <string name="left_to_buy_format">Left to buy: %1$d</string>
