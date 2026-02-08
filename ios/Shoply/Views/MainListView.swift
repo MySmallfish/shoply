@@ -333,7 +333,7 @@ struct MainListView: View {
 
     private func headerIcon(systemName: String) -> some View {
         Image(systemName: systemName)
-            .font(.system(size: 20, weight: .semibold))
+            .appFont(20, weight: .semibold)
             .frame(width: 38, height: 38)
             .contentShape(Rectangle())
     }
@@ -371,7 +371,7 @@ struct MainListView: View {
     private var emptyState: some View {
         VStack(spacing: 12) {
             Text("No list selected")
-                .font(.system(size: 18, weight: .semibold))
+                .appFont(18, weight: .semibold)
             Text("Create a list to start sharing")
                 .foregroundColor(.secondary)
             Button("Create List") {
@@ -384,12 +384,12 @@ struct MainListView: View {
     private var emptyItemsState: some View {
         VStack(spacing: 10) {
             Image(systemName: "cart")
-                .font(.system(size: 28))
+                .appFont(28)
                 .foregroundColor(.secondary)
             Text("Add your first item")
-                .font(.system(size: 18, weight: .semibold))
+                .appFont(18, weight: .semibold)
             Text("Use the bar below or scan a barcode.")
-                .font(.system(size: 14))
+                .appFont(14)
                 .foregroundColor(.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -536,13 +536,13 @@ private struct UndoToastView: View {
     var body: some View {
         HStack(spacing: 12) {
             Text(title)
-                .font(.system(size: 14, weight: .semibold))
+                .appFont(14, weight: .semibold)
                 .foregroundColor(.white)
             Spacer()
             Button("Undo") {
                 onUndo()
             }
-            .font(.system(size: 14, weight: .semibold))
+            .appFont(14, weight: .semibold)
             .foregroundColor(.white)
         }
         .padding(.horizontal, 16)

@@ -145,9 +145,15 @@ struct SettingsView: View {
             }
             .pickerStyle(.segmented)
 
-            Text(L10n.string("Font size preview", language: appLanguage))
-                .frame(maxWidth: .infinity, alignment: isRTL ? .trailing : .leading)
-                .environment(\.layoutDirection, .leftToRight)
+            VStack(alignment: isRTL ? .trailing : .leading, spacing: 6) {
+                Text(L10n.string("Font size preview", language: appLanguage))
+                    .appFont(17, weight: .semibold)
+                Text(L10n.string("Add your first item", language: appLanguage))
+                    .appFont(14)
+                    .foregroundColor(.secondary)
+            }
+            .frame(maxWidth: .infinity, alignment: isRTL ? .trailing : .leading)
+            .environment(\.layoutDirection, .leftToRight)
         } header: {
             Text(L10n.string("Display", language: appLanguage))
                 .frame(maxWidth: .infinity, alignment: isRTL ? .trailing : .leading)

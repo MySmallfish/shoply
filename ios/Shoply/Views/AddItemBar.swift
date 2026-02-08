@@ -48,7 +48,7 @@ struct AddItemBar: View {
     private var detailsButton: some View {
         Button(action: onDetails) {
             Image(systemName: "tag")
-                .font(.system(size: 16, weight: .semibold))
+                .appFont(16, weight: .semibold)
                 .frame(width: 44, height: 44)
                 .background(Color(.secondarySystemBackground))
                 .foregroundColor(.primary)
@@ -61,7 +61,7 @@ struct AddItemBar: View {
     private var addButton: some View {
         Button(action: onAdd) {
             Image(systemName: "plus")
-                .font(.system(size: 16, weight: .bold))
+                .appFont(16, weight: .bold)
                 .frame(width: 44, height: 44)
                 .background(Color.black)
                 .foregroundColor(.white)

@@ -396,7 +396,7 @@ private struct StockIconsRow: View {
                         icon = iconValue
                     } label: {
                         Text(iconValue)
-                            .font(.system(size: 22))
+                            .appFont(22)
                             .frame(width: 36, height: 36)
                             .background(
                                 RoundedRectangle(cornerRadius: 8, style: .continuous)

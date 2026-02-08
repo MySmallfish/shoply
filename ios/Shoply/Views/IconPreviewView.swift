@@ -14,7 +14,7 @@ struct IconPreviewView: View {
                     .padding(24)
             } else {
                 Text(icon)
-                    .font(.system(size: 120))
+                    .appFont(120)
                     .foregroundColor(.white)
             }
         }

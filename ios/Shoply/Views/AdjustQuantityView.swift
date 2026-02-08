@@ -71,7 +71,7 @@ struct AdjustQuantityView: View {
                 .environment(\.layoutDirection, .leftToRight)
 
                 Text("How much?")
-                    .font(.system(size: 14, weight: .semibold))
+                    .appFont(14, weight: .semibold)
                     .frame(maxWidth: .infinity, alignment: isRTL ? .trailing : .leading)
                     .environment(\.layoutDirection, .leftToRight)
 
@@ -140,10 +140,10 @@ struct AdjustQuantityView: View {
     private func headerText(isRTL: Bool) -> some View {
         VStack(alignment: isRTL ? .trailing : .leading, spacing: 6) {
             Text(item.name)
-                .font(.system(size: 18, weight: .semibold))
+                .appFont(18, weight: .semibold)
                 .multilineTextAlignment(isRTL ? .trailing : .leading)
             Text(leftToBuyText)
-                .font(.system(size: 14))
+                .appFont(14)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(isRTL ? .trailing : .leading)
         }
@@ -168,7 +168,7 @@ struct AdjustQuantityView: View {
 
     private var amountText: some View {
         Text("\(max(1, amount))")
-            .font(.system(size: 44, weight: .bold, design: .rounded))
+            .appFont(44, weight: .bold, design: .rounded)
             .frame(minWidth: 80)
     }
 
@@ -179,7 +179,7 @@ struct AdjustQuantityView: View {
             }
         } label: {
             Image(systemName: "minus")
-                .font(.system(size: 20, weight: .bold))
+                .appFont(20, weight: .bold)
                 .frame(width: 56, height: 56)
                 .background(Color(.secondarySystemBackground))
                 .clipShape(Circle())
@@ -191,7 +191,7 @@ struct AdjustQuantityView: View {
             amount += 1
         } label: {
             Image(systemName: "plus")
-                .font(.system(size: 20, weight: .bold))
+                .appFont(20, weight: .bold)
                 .frame(width: 56, height: 56)
                 .background(Color(.secondarySystemBackground))
                 .clipShape(Circle())

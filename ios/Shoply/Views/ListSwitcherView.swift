@@ -55,9 +55,9 @@ struct ListSwitcherView: View {
         } label: {
             HStack(spacing: 6) {
                 Text(currentTitle)
-                    .font(.system(size: 17, weight: .semibold))
+                    .appFont(17, weight: .semibold)
                 Image(systemName: "chevron.down")
-                    .font(.system(size: 12, weight: .semibold))
+                    .appFont(12, weight: .semibold)
             }
         }
     }

@@ -10,9 +10,9 @@ struct SignInView: View {
 
             VStack(spacing: 8) {
                 Text("Shoply")
-                    .font(.system(size: 36, weight: .bold))
+                    .appFont(36, weight: .bold)
                 Text("Shared lists that update in real time")
-                    .font(.system(size: 16, weight: .regular))
+                    .appFont(16, weight: .regular)
                     .foregroundColor(.secondary)
             }
 

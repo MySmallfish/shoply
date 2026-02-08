@@ -47,18 +47,18 @@ struct ItemRow: View {
             HStack(spacing: 6) {
                 Button(action: onDecrement) {
                     Image(systemName: "minus")
-                        .font(.system(size: 12, weight: .bold))
+                        .appFont(12, weight: .bold)
                         .frame(width: 26, height: 26)
                         .background(Color(.secondarySystemBackground))
                         .clipShape(Circle())
                 }
                 .buttonStyle(.borderless)
                 Text("\(item.quantity)")
-                    .font(.system(size: 14, weight: .semibold))
+                    .appFont(14, weight: .semibold)
                     .frame(minWidth: 18)
                 Button(action: onIncrement) {
                     Image(systemName: "plus")
-                        .font(.system(size: 12, weight: .bold))
+                        .appFont(12, weight: .bold)
                         .frame(width: 26, height: 26)
                         .background(Color(.secondarySystemBackground))
                         .clipShape(Circle())
