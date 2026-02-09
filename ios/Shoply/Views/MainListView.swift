@@ -315,7 +315,7 @@ struct MainListView: View {
                     Button(pendingInvitesTitle) {
                         showPendingInvites = true
                     }
-                    Button("Sign Out", role: .destructive) {
+                    Button(L10n.string("Sign Out", language: appLanguage), role: .destructive) {
                         session.signOut()
                     }
                 } label: {
@@ -399,9 +399,11 @@ struct MainListView: View {
     private var pendingInvitesTitle: String {
         let count = session.pendingInvites.count
         if count > 0 {
-            return String(format: NSLocalizedString("pending_invitations_count_format", comment: ""), count)
+            let template = L10n.string("pending_invitations_count_format", language: appLanguage)
+            let formattingLocale = Locale(identifier: appLanguage)
+            return String(format: template, locale: formattingLocale, count)
         }
-        return NSLocalizedString("Pending Invitations", comment: "")
+        return L10n.string("Pending Invitations", language: appLanguage)
     }
 
     private func bindIfNeeded() {
