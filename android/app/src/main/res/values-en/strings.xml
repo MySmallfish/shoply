@@ -94,6 +94,7 @@
     <string name="save_failed">Save failed.</string>
     <string name="font_size">Font size</string>
     <string name="font_size_preview">Preview</string>
+    <string name="others">Others</string>
 
     <string name="how_much_did_you_buy">How much did you buy?</string>
     <string name="left_to_buy_format">Left to buy: %1$d</string>

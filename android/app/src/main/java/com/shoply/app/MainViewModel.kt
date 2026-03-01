@@ -245,6 +245,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         )
     }
 
+    fun consumeRequiredQuantity(item: ShoppingItem) {
+        if (item.quantity <= 0) return
+        adjustQuantity(item, -item.quantity)
+    }
+
     fun applyScanPurchase(item: ShoppingItem, amount: Int) {
         val listId = _selectedListId.value ?: return
         if (amount >= item.quantity) {

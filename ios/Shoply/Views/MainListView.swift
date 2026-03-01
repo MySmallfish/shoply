@@ -340,20 +340,29 @@ struct MainListView: View {
 
     @ViewBuilder
     private func listContent(listId: String) -> some View {
+        let neededItems = listViewModel.items.filter { $0.quantity > 0 }
+        let otherItems = listViewModel.items.filter { $0.quantity <= 0 }
         List {
-            ForEach(listViewModel.items) { item in
-                ItemRow(item: item,
-                        onTap: { adjustItem = item },
-                        onIconTap: { icon in previewIcon = PreviewIcon(icon: icon) },
-                        onIncrement: { listViewModel.incrementQuantity(item) },
-                        onDecrement: { listViewModel.decrementQuantity(item) })
-                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                        Button(role: .destructive) {
-                            listViewModel.deleteItem(item)
-                        } label: {
-                            Label(NSLocalizedString("Delete", comment: ""), systemImage: "trash")
-                        }
+            ForEach(neededItems) { item in
+                listRow(item: item, highlighted: true)
+            }
+
+            if !neededItems.isEmpty && !otherItems.isEmpty {
+                Color.clear
+                    .frame(height: 44)
+                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
+            }
+
+            if !otherItems.isEmpty {
+                Section {
+                    ForEach(otherItems) { item in
+                        listRow(item: item, highlighted: false)
                     }
+                } header: {
+                    Text(L10n.string("Others", language: appLanguage))
+                }
             }
         }
         .listStyle(.plain)
@@ -366,6 +375,30 @@ struct MainListView: View {
                 emptyItemsState
             }
         }
+    }
+
+    @ViewBuilder
+    private func listRow(item: ShoppingItem, highlighted: Bool) -> some View {
+        ItemRow(item: item,
+                onTap: { adjustItem = item },
+                onIconTap: { icon in previewIcon = PreviewIcon(icon: icon) },
+                onIncrement: { listViewModel.incrementQuantity(item) },
+                onDecrement: { listViewModel.decrementQuantity(item) })
+            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                Button {
+                    listViewModel.consumeRequiredQuantity(item)
+                } label: {
+                    Label(L10n.string("Bought", language: appLanguage), systemImage: "checkmark.circle.fill")
+                }
+                .tint(.blue)
+
+                Button(role: .destructive) {
+                    listViewModel.deleteItem(item)
+                } label: {
+                    Label(NSLocalizedString("Delete", comment: ""), systemImage: "trash")
+                }
+            }
+            .listRowBackground(highlighted ? Color.accentColor.opacity(0.09) : Color(.systemBackground))
     }
 
     private var emptyState: some View {

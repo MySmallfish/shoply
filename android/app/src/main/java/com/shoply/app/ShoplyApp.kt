@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -49,6 +50,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.PhotoLibrary
@@ -278,7 +280,6 @@ fun ListScreen(
     var isRefreshing by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     val refreshScope = rememberCoroutineScope()
-    val swipeScope = rememberCoroutineScope()
     val pullRefreshState = rememberPullRefreshState(
         refreshing = isRefreshing,
         onRefresh = {
@@ -291,6 +292,8 @@ fun ListScreen(
         }
     )
     var previewIcon by remember { mutableStateOf<String?>(null) }
+    val itemsToBuy = remember(items) { items.filter { it.quantity > 0 } }
+    val otherItems = remember(items) { items.filter { it.quantity <= 0 } }
 
     fun openAdjustDialog(item: ShoppingItem) {
         val defaultMode = if (item.quantity <= 0) QuantityMode.NEED else QuantityMode.BOUGHT
@@ -514,72 +517,51 @@ fun ListScreen(
                         }
                     }
                 } else {
-                    items(items, key = { it.id }) { item ->
-                        val layoutDirection = LocalLayoutDirection.current
-                        val actionWidth = 72.dp
-                        val actionWidthPx = with(LocalDensity.current) { actionWidth.toPx() }
-                        val openOffset = if (layoutDirection == LayoutDirection.Rtl) {
-                            actionWidthPx
-                        } else {
-                            -actionWidthPx
-                        }
-                        val swipeState = rememberSwipeableState(initialValue = 0)
-                        val anchors = remember(openOffset) { mapOf(0f to 0, openOffset to 1) }
-                        val offsetX = swipeState.offset.value.roundToInt()
-                        val isOpen = swipeState.currentValue == 1
-                        val deleteAlignment = Alignment.CenterEnd
-                        val deletePadding = Modifier.padding(end = 12.dp)
+                    items(itemsToBuy, key = { it.id }) { item ->
+                        SwipeableItemRow(
+                            item = item,
+                            highlighted = true,
+                            onApprove = { viewModel.consumeRequiredQuantity(item) },
+                            onDelete = { viewModel.deleteItem(item) },
+                            onTap = { openAdjustDialog(item) },
+                            onIconTap = { icon -> previewIcon = icon },
+                            onIncrement = { viewModel.incrementQuantity(item) },
+                            onDecrement = { viewModel.decrementQuantity(item) }
+                        )
+                    }
 
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .swipeable(
-                                    state = swipeState,
-                                    anchors = anchors,
-                                    thresholds = { _, _ -> FractionalThreshold(0.3f) },
-                                    orientation = Orientation.Horizontal
-                                )
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .background(MaterialTheme.colorScheme.errorContainer),
-                                contentAlignment = deleteAlignment
-                            ) {
-                                IconButton(
-                                    onClick = {
-                                        viewModel.deleteItem(item)
-                                        swipeScope.launch { swipeState.animateTo(0) }
-                                    },
-                                    modifier = deletePadding
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Delete,
-                                        contentDescription = stringResource(R.string.delete),
-                                        tint = MaterialTheme.colorScheme.onErrorContainer
-                                    )
-                                }
+                    if (itemsToBuy.isNotEmpty() && otherItems.isNotEmpty()) {
+                        item {
+                            Spacer(modifier = Modifier.height(52.dp))
+                        }
+                    }
+
+                    if (otherItems.isNotEmpty()) {
+                        item {
+                            val textAlign = if (LocalLayoutDirection.current == LayoutDirection.Rtl) {
+                                TextAlign.End
+                            } else {
+                                TextAlign.Start
                             }
-                            Surface(
-                                color = MaterialTheme.colorScheme.surface,
-                                modifier = Modifier
-                                    .offset { IntOffset(offsetX, 0) }
-                                    .fillMaxWidth()
-                            ) {
-                                ItemRow(
-                                    item = item,
-                                    onTap = {
-                                        if (isOpen) {
-                                            swipeScope.launch { swipeState.animateTo(0) }
-                                        } else {
-                                            openAdjustDialog(item)
-                                        }
-                                    },
-                                    onIconTap = { icon -> previewIcon = icon },
-                                    onIncrement = { viewModel.incrementQuantity(item) },
-                                    onDecrement = { viewModel.decrementQuantity(item) }
-                                )
-                            }
+                            Text(
+                                text = stringResource(R.string.others),
+                                style = MaterialTheme.typography.titleSmall,
+                                modifier = Modifier.fillMaxWidth(),
+                                textAlign = textAlign,
+                                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                            )
+                        }
+                        items(otherItems, key = { it.id }) { item ->
+                            SwipeableItemRow(
+                                item = item,
+                                highlighted = false,
+                                onApprove = { viewModel.consumeRequiredQuantity(item) },
+                                onDelete = { viewModel.deleteItem(item) },
+                                onTap = { openAdjustDialog(item) },
+                                onIconTap = { icon -> previewIcon = icon },
+                                onIncrement = { viewModel.incrementQuantity(item) },
+                                onDecrement = { viewModel.decrementQuantity(item) }
+                            )
                         }
                     }
                 }
@@ -883,6 +865,122 @@ fun ListScreen(
                 detailsItemId = null
             }
         )
+    }
+}
+
+@Composable
+@OptIn(ExperimentalMaterialApi::class)
+private fun SwipeableItemRow(
+    item: ShoppingItem,
+    highlighted: Boolean,
+    onApprove: () -> Unit,
+    onDelete: () -> Unit,
+    onTap: () -> Unit,
+    onIconTap: ((String) -> Unit)? = null,
+    onIncrement: () -> Unit,
+    onDecrement: () -> Unit
+) {
+    val swipeScope = rememberCoroutineScope()
+    val layoutDirection = LocalLayoutDirection.current
+    val actionWidth = 72.dp
+    val actionWidthPx = with(LocalDensity.current) { actionWidth.toPx() }
+    val singleOffset = if (layoutDirection == LayoutDirection.Rtl) actionWidthPx else -actionWidthPx
+    val doubleOffset = if (layoutDirection == LayoutDirection.Rtl) actionWidthPx * 2f else -actionWidthPx * 2f
+    val swipeState = rememberSwipeableState(initialValue = 0)
+    val anchors = remember(singleOffset, doubleOffset) {
+        mapOf(
+            0f to 0,
+            singleOffset to 1,
+            doubleOffset to 2
+        )
+    }
+    val offsetX = swipeState.offset.value.roundToInt()
+    val isOpen = swipeState.currentValue != 0
+    val absOffset = kotlin.math.abs(swipeState.offset.value)
+    val deleteVisible = absOffset >= (actionWidthPx * 1.25f)
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .swipeable(
+                state = swipeState,
+                anchors = anchors,
+                thresholds = { _, _ -> FractionalThreshold(0.3f) },
+                orientation = Orientation.Horizontal
+            )
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+            contentAlignment = Alignment.CenterEnd
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .padding(end = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.End
+            ) {
+                IconButton(
+                    onClick = {
+                        onApprove()
+                        swipeScope.launch { swipeState.animateTo(0) }
+                    },
+                    modifier = Modifier
+                        .size(44.dp)
+                        .background(Color(0xFF1E88E5), CircleShape)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = stringResource(R.string.bought),
+                        tint = Color.White
+                    )
+                }
+                if (deleteVisible) {
+                    Spacer(modifier = Modifier.width(10.dp))
+                    IconButton(
+                        onClick = {
+                            onDelete()
+                            swipeScope.launch { swipeState.animateTo(0) }
+                        },
+                        modifier = Modifier
+                            .size(44.dp)
+                            .background(MaterialTheme.colorScheme.errorContainer, CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = stringResource(R.string.delete),
+                            tint = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                    }
+                }
+            }
+        }
+        Surface(
+            color = if (highlighted) {
+                MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
+            } else {
+                MaterialTheme.colorScheme.surface
+            },
+            modifier = Modifier
+                .offset { IntOffset(offsetX, 0) }
+                .fillMaxWidth()
+        ) {
+            ItemRow(
+                item = item,
+                onTap = {
+                    if (isOpen) {
+                        swipeScope.launch { swipeState.animateTo(0) }
+                    } else {
+                        onTap()
+                    }
+                },
+                onIconTap = onIconTap,
+                onIncrement = onIncrement,
+                onDecrement = onDecrement
+            )
+        }
     }
 }
 

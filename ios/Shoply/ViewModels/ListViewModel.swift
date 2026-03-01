@@ -157,6 +157,11 @@ final class ListViewModel: ObservableObject {
         )
     }
 
+    func consumeRequiredQuantity(_ item: ShoppingItem) {
+        guard item.quantity > 0 else { return }
+        adjustQuantity(item, delta: -item.quantity)
+    }
+
     func deleteItem(_ item: ShoppingItem) {
         guard let listId = listId else { return }
         lastDeleted = DeletedItem(listId: listId, item: item)

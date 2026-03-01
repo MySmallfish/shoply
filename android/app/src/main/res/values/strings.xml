@@ -94,6 +94,7 @@
     <string name="save_failed">השמירה נכשלה.</string>
     <string name="font_size">גודל טקסט</string>
     <string name="font_size_preview">תצוגה מקדימה</string>
+    <string name="others">אחרים</string>
 
     <string name="how_much_did_you_buy">כמה קנית?</string>
     <string name="left_to_buy_format">נשאר לקנייה: %1$d</string>
