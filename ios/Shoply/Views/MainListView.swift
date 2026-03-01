@@ -395,7 +395,7 @@ struct MainListView: View {
                 Button(role: .destructive) {
                     listViewModel.deleteItem(item)
                 } label: {
-                    Label(NSLocalizedString("Delete", comment: ""), systemImage: "trash")
+                    Label(L10n.string("Delete", language: appLanguage), systemImage: "trash")
                 }
             }
             .listRowBackground(highlighted ? Color.accentColor.opacity(0.09) : Color(.systemBackground))

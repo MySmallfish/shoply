@@ -886,7 +886,17 @@ private fun SwipeableItemRow(
     val actionWidthPx = with(LocalDensity.current) { actionWidth.toPx() }
     val singleOffset = if (layoutDirection == LayoutDirection.Rtl) actionWidthPx else -actionWidthPx
     val doubleOffset = if (layoutDirection == LayoutDirection.Rtl) actionWidthPx * 2f else -actionWidthPx * 2f
-    val swipeState = rememberSwipeableState(initialValue = 0)
+    val swipeState = rememberSwipeableState(
+        initialValue = 0,
+        confirmStateChange = { newValue ->
+            if (newValue == 1) {
+                onApprove()
+                false
+            } else {
+                true
+            }
+        }
+    )
     val anchors = remember(singleOffset, doubleOffset) {
         mapOf(
             0f to 0,
