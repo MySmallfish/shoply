@@ -907,9 +907,15 @@ private fun SwipeableItemRow(
     val offsetX = swipeState.offset.value.roundToInt()
     val isOpen = swipeState.currentValue != 0
     val offsetValue = swipeState.offset.value
-    val showingApproveSide = if (approveOffset > 0f) offsetValue > 8f else offsetValue < -8f
     val showingDeleteSide = if (deleteOffset > 0f) offsetValue > 8f else offsetValue < -8f
     val deleteVisible = showingDeleteSide || swipeState.currentValue == -1
+    val deleteAlignment = if (deleteOffset > 0f) Alignment.CenterStart else Alignment.CenterEnd
+
+    LaunchedEffect(item.quantity, item.name, item.icon) {
+        if (swipeState.currentValue != 0 || kotlin.math.abs(swipeState.offset.value) > 1f) {
+            swipeState.snapTo(0)
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -926,25 +932,6 @@ private fun SwipeableItemRow(
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         ) {
-            if (showingApproveSide) {
-                IconButton(
-                    onClick = {
-                        onApprove()
-                        swipeScope.launch { swipeState.animateTo(0) }
-                    },
-                    modifier = Modifier
-                        .align(Alignment.CenterEnd)
-                        .padding(end = 12.dp)
-                        .size(44.dp)
-                        .background(Color(0xFF1E88E5), CircleShape)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Check,
-                        contentDescription = stringResource(R.string.bought),
-                        tint = Color.White
-                    )
-                }
-            }
             if (deleteVisible) {
                 IconButton(
                     onClick = {
@@ -952,8 +939,10 @@ private fun SwipeableItemRow(
                         swipeScope.launch { swipeState.animateTo(0) }
                     },
                     modifier = Modifier
-                        .align(Alignment.CenterStart)
-                        .padding(start = 12.dp)
+                        .align(deleteAlignment)
+                        .let {
+                            if (deleteOffset > 0f) it.padding(start = 12.dp) else it.padding(end = 12.dp)
+                        }
                         .size(44.dp)
                         .background(MaterialTheme.colorScheme.errorContainer, CircleShape)
                 ) {
