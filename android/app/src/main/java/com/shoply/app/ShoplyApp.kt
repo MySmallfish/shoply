@@ -555,7 +555,7 @@ fun ListScreen(
                             SwipeableItemRow(
                                 item = item,
                                 highlighted = false,
-                                onApprove = { viewModel.consumeRequiredQuantity(item) },
+                                onApprove = { viewModel.setNeedQuantityOne(item) },
                                 onDelete = { viewModel.deleteItem(item) },
                                 onTap = { openAdjustDialog(item) },
                                 onIconTap = { icon -> previewIcon = icon },

@@ -250,6 +250,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         adjustQuantity(item, -item.quantity)
     }
 
+    fun setNeedQuantityOne(item: ShoppingItem) {
+        val delta = 1 - item.quantity
+        if (delta == 0) return
+        adjustQuantity(item, delta)
+    }
+
     fun applyScanPurchase(item: ShoppingItem, amount: Int) {
         val listId = _selectedListId.value ?: return
         if (amount >= item.quantity) {

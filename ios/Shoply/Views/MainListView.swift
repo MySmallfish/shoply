@@ -379,6 +379,7 @@ struct MainListView: View {
 
     @ViewBuilder
     private func listRow(item: ShoppingItem, highlighted: Bool) -> some View {
+        let isOtherItem = item.quantity <= 0
         ItemRow(item: item,
                 onTap: { adjustItem = item },
                 onIconTap: { icon in previewIcon = PreviewIcon(icon: icon) },
@@ -386,9 +387,16 @@ struct MainListView: View {
                 onDecrement: { listViewModel.decrementQuantity(item) })
             .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                 Button {
-                    listViewModel.consumeRequiredQuantity(item)
+                    if isOtherItem {
+                        listViewModel.setNeedQuantityOne(item)
+                    } else {
+                        listViewModel.consumeRequiredQuantity(item)
+                    }
                 } label: {
-                    Label(L10n.string("Bought", language: appLanguage), systemImage: "checkmark.circle.fill")
+                    Label(
+                        L10n.string(isOtherItem ? "Need" : "Bought", language: appLanguage),
+                        systemImage: isOtherItem ? "plus.circle.fill" : "checkmark.circle.fill"
+                    )
                 }
                 .tint(.blue)
             }
