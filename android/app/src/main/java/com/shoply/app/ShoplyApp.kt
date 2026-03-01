@@ -884,8 +884,8 @@ private fun SwipeableItemRow(
     val layoutDirection = LocalLayoutDirection.current
     val actionWidth = 72.dp
     val actionWidthPx = with(LocalDensity.current) { actionWidth.toPx() }
-    val singleOffset = if (layoutDirection == LayoutDirection.Rtl) actionWidthPx else -actionWidthPx
-    val doubleOffset = if (layoutDirection == LayoutDirection.Rtl) actionWidthPx * 2f else -actionWidthPx * 2f
+    val approveOffset = if (layoutDirection == LayoutDirection.Rtl) actionWidthPx else -actionWidthPx
+    val deleteOffset = -approveOffset
     val swipeState = rememberSwipeableState(
         initialValue = 0,
         confirmStateChange = { newValue ->
@@ -897,17 +897,19 @@ private fun SwipeableItemRow(
             }
         }
     )
-    val anchors = remember(singleOffset, doubleOffset) {
+    val anchors = remember(approveOffset, deleteOffset) {
         mapOf(
             0f to 0,
-            singleOffset to 1,
-            doubleOffset to 2
+            approveOffset to 1,
+            deleteOffset to -1
         )
     }
     val offsetX = swipeState.offset.value.roundToInt()
     val isOpen = swipeState.currentValue != 0
-    val absOffset = kotlin.math.abs(swipeState.offset.value)
-    val deleteVisible = absOffset >= (actionWidthPx * 1.25f)
+    val offsetValue = swipeState.offset.value
+    val showingApproveSide = if (approveOffset > 0f) offsetValue > 8f else offsetValue < -8f
+    val showingDeleteSide = if (deleteOffset > 0f) offsetValue > 8f else offsetValue < -8f
+    val deleteVisible = showingDeleteSide || swipeState.currentValue == -1
 
     Box(
         modifier = Modifier
@@ -922,22 +924,17 @@ private fun SwipeableItemRow(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.surfaceVariant),
-            contentAlignment = Alignment.CenterEnd
+                .background(MaterialTheme.colorScheme.surfaceVariant)
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .padding(end = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.End
-            ) {
+            if (showingApproveSide) {
                 IconButton(
                     onClick = {
                         onApprove()
                         swipeScope.launch { swipeState.animateTo(0) }
                     },
                     modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .padding(end = 12.dp)
                         .size(44.dp)
                         .background(Color(0xFF1E88E5), CircleShape)
                 ) {
@@ -947,23 +944,24 @@ private fun SwipeableItemRow(
                         tint = Color.White
                     )
                 }
-                if (deleteVisible) {
-                    Spacer(modifier = Modifier.width(10.dp))
-                    IconButton(
-                        onClick = {
-                            onDelete()
-                            swipeScope.launch { swipeState.animateTo(0) }
-                        },
-                        modifier = Modifier
-                            .size(44.dp)
-                            .background(MaterialTheme.colorScheme.errorContainer, CircleShape)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = stringResource(R.string.delete),
-                            tint = MaterialTheme.colorScheme.onErrorContainer
-                        )
-                    }
+            }
+            if (deleteVisible) {
+                IconButton(
+                    onClick = {
+                        onDelete()
+                        swipeScope.launch { swipeState.animateTo(0) }
+                    },
+                    modifier = Modifier
+                        .align(Alignment.CenterStart)
+                        .padding(start = 12.dp)
+                        .size(44.dp)
+                        .background(MaterialTheme.colorScheme.errorContainer, CircleShape)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = stringResource(R.string.delete),
+                        tint = MaterialTheme.colorScheme.onErrorContainer
+                    )
                 }
             }
         }

@@ -391,7 +391,8 @@ struct MainListView: View {
                     Label(L10n.string("Bought", language: appLanguage), systemImage: "checkmark.circle.fill")
                 }
                 .tint(.blue)
-
+            }
+            .swipeActions(edge: .leading, allowsFullSwipe: false) {
                 Button(role: .destructive) {
                     listViewModel.deleteItem(item)
                 } label: {
